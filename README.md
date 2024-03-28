@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Fundraise Up Test Work
 
 This repository contains the test work for Fundraise Up.
@@ -52,3 +53,6 @@ npm run lint:fix
 
 Andrey Nekrasov
 Email: bonerdelli@gmail.com
+=======
+# Тестовое на вакансию Frontend (React / Vue.js) Developer
+>>>>>>> ea1ce96 (Initial commit)
