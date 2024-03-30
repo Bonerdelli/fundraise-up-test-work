@@ -7,6 +7,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       title: 'Vocabularity Trainer',
+      template: 'src/index.html',
     }),
   ],
   module: {
@@ -17,10 +18,10 @@ module.exports = {
         loader: "babel-loader",
         options: {
           presets: [
-            ['@babel/preset-typescript']
-          ]
-        }
-      }]
+            ['@babel/preset-typescript'],
+          ],
+        },
+      }],
     }],
   },
   devServer: {
