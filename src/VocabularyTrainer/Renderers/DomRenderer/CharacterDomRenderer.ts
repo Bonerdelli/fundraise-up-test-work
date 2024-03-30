@@ -1,25 +1,30 @@
 import { Character, CharacterState } from '../../types'
 
-export class DomRendererCharacter implements Character {
+export class CharacterDomRenderer implements Character {
   public state: CharacterState
   private character: string
-  private domElement?: Element
+  private domElement: Element
 
   constructor(character: string, state?: CharacterState) {
     this.character = character
     this.state = state ?? CharacterState.Default
+    this.domElement = this.render()
+  }
+
+  public get instance() {
+    return this.domElement
   }
 
   public setState(state: CharacterState) {
+    const prevClassName = this.getStateClassName()
+    const className = this.getStateClassName(state)
+    this.domElement.classList.add(className)
+    this.domElement.classList.remove(prevClassName)
     this.state = state
   }
 
   public setOnSelect(handler: () => void) {
     this.domElement?.addEventListener('click', () => handler())
-  }
-
-  public getInstance() {
-    return this.domElement
   }
 
   private getStateClassName(state = this.state): string {
@@ -40,7 +45,6 @@ export class DomRendererCharacter implements Character {
     div.style.width = '2.4em'
     div.style.height = '2.4em'
     div.textContent = this.character
-    this.domElement = div
     return div
   }
 }
