@@ -5,7 +5,11 @@ import { ApplicationDomRenderer } from './VocabularyTrainer/Renderers/DomRendere
 
 function run() {
   const renderer = new ApplicationDomRenderer()
-  const application = new VocabularyTrainer({ renderer, words })
+  const application = new VocabularyTrainer({
+    words,
+    wordsInGame: 10,
+    renderer,
+  })
   application.runNewGame()
 }
 

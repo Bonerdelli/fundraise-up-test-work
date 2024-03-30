@@ -18,8 +18,10 @@ export class CharacterDomRenderer implements Character {
   public setState(state: CharacterState) {
     const prevClassName = this.getStateClassName()
     const className = this.getStateClassName(state)
-    this.domElement.classList.add(className)
-    this.domElement.classList.remove(prevClassName)
+    if (prevClassName !== className) {
+      this.domElement.classList.add(className)
+      this.domElement.classList.remove(prevClassName)
+    }
     this.state = state
   }
 
