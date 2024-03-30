@@ -1,43 +1,53 @@
-import { Application, CharacterState, Renderer } from './types'
-
-export interface VocabularyTrainerOptions {
-  words: string[]
-  wordsInGame: number
-  renderer: Renderer
-}
+import {
+  Application,
+  ApplicationOptions,
+  CharacterState,
+  Renderer,
+} from './types'
 
 export class VocabularyTrainer implements Application {
   protected words: string[]
   protected currentWords?: string[]
+  protected currentGameSet?: Record<string, string[]>
   private renderer: Renderer
 
   wordsInGame: number
-  currentWord: number
-  currentWordErrorsCount?: number
+  currentWordNum: number
+  currentWordErrors?: number
   erroredResultsCount?: number
 
-  constructor(opts: VocabularyTrainerOptions) {
+  constructor(opts: ApplicationOptions) {
     this.words = opts.words
     this.renderer = opts.renderer
     this.wordsInGame = opts.wordsInGame
-    this.currentWord = 0
+    this.currentWordNum = 0
   }
 
   runNewGame() {
-    this.currentWords = this.getRandomizedWords(this.wordsInGame)
-    this.currentWordErrorsCount = 0
+    this.generateGameSet(this.wordsInGame)
+    this.currentWordErrors = 0
     this.erroredResultsCount = 0
-    this.currentWord = 1
+    this.currentWordNum = 1
     this.nextWord()
   }
 
-  private getRandomizedWords(limit?: number) {
-    const currentGameWords = [...this.words]
-    currentGameWords.sort(() => Math.random() - 0.5)
-    if (limit) {
-      currentGameWords.splice(0, limit)
+  protected generateGameSet(wordsLimit?: number) {
+    const currentWords = this.getRandomizedArray(this.words, wordsLimit)
+    const wordsWithShuffledChars = currentWords.map(word =>
+      this.getRandomizedArray(word.split('')).join(''),
+    )
+    this.currentWords = wordsWithShuffledChars
+    // this.currentGameSet =
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected getRandomizedArray(input: any[], limit?: number) {
+    let result = [...input]
+    result.sort(() => Math.random() - 0.5)
+    if (limit && limit < input.length) {
+      result = result.slice(0, limit)
     }
-    return currentGameWords
+    return result
   }
 
   protected nextWord() {
@@ -50,7 +60,7 @@ export class VocabularyTrainer implements Application {
     for (const instance of characterInstances) {
       instance.setOnSelect(() => instance.setState(CharacterState.Error))
     }
-    this.currentWord++
+    this.currentWordNum++
   }
 
   // protected checkIsCharacterValid(char: string) {
