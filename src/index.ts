@@ -5,18 +5,6 @@ function getRandomWord() {
   return words[index]
 }
 
-function createButton(letter: string): Element {
-  // const host = document.body
-  // const shadow = host.attachShadow({ mode: 'open' })
-  const div = document.createElement('div')
-  div.classList.add('btn', 'btn-primary', 'mx-1', 'my-1')
-  div.style.width = '2.4em'
-  div.style.height = '2.4em'
-  div.textContent = letter
-  // shadow.appendChild(div)
-  return div
-}
-
 function testInit() {
   const currentQuestionEl = document.getElementById('current_question')
   const totalQuestionsEl = document.getElementById('total_questions')
