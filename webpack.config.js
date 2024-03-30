@@ -24,6 +24,9 @@ module.exports = {
       }],
     }],
   },
+  resolve: {
+    extensions: ['.ts', '.js'],
+  },
   devServer: {
     hot: true,
   },
