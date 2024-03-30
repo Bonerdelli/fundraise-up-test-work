@@ -1,14 +1,17 @@
-function testComponent(): Element {
-  const element = document.createElement('div')
-  element.innerHTML = 'Hello World!'
-  return element
+import words from './words.json'
+
+function getRandomWord() {
+  const index = Math.floor(Math.random() * words.length)
+  return words[index]
 }
 
 function createButton(letter: string): Element {
   // const host = document.body
   // const shadow = host.attachShadow({ mode: 'open' })
   const div = document.createElement('div')
-  div.classList.add('btn', 'btn-primary')
+  div.classList.add('btn', 'btn-primary', 'mx-1', 'my-1')
+  div.style.width = '2.4em'
+  div.style.height = '2.4em'
   div.textContent = letter
   // shadow.appendChild(div)
   return div
@@ -26,13 +29,19 @@ function testInit() {
 
   currentQuestionEl.innerText = '10'
   totalQuestionsEl.innerText = '100'
-  answerEl.innerText = 'jfosie'
-  // lettersEl.lettersEl.appendChild()
-  // lettersEl.innerText = 'a'
 
-  const testButton = createButton('a')
-  lettersEl.appendChild(testButton)
+  const testWord1 = getRandomWord()
+  const testWord2 = getRandomWord()
+
+  for (const char of testWord1) {
+    const testButton = createButton(char)
+    answerEl.appendChild(testButton)
+  }
+
+  for (const char of testWord2) {
+    const testButton = createButton(char)
+    lettersEl.appendChild(testButton)
+  }
 }
 
-document.body.appendChild(testComponent())
 testInit()
