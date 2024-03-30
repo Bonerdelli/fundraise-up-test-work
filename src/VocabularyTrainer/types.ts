@@ -10,14 +10,14 @@ export enum CharacterState {
   Error,
 }
 
-export interface Application {
-  runNewGame: () => void
+export interface ApplicationOptions {
+  words: string[]
+  wordsInGame: number
+  renderer: Renderer
 }
 
-export interface Character {
-  state: CharacterState
-  setOnSelect: (handler: () => void) => void
-  setState: (state: CharacterState) => void
+export interface Application {
+  runNewGame: () => void
 }
 
 export interface Renderer {
@@ -25,4 +25,10 @@ export interface Renderer {
   renderWord: (word: string | string[]) => Character[]
   renderCharacter: (text: string) => Character
   cleanResultInput: () => void
+}
+
+export interface Character {
+  state: CharacterState
+  setOnSelect: (handler: () => void) => void
+  setState: (state: CharacterState) => void
 }
