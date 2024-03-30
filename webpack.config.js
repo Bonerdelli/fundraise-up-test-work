@@ -9,6 +9,20 @@ module.exports = {
       title: 'Vocabularity Trainer',
     }),
   ],
+  module: {
+    rules: [{
+      test: /\.(?:ts)$/,
+      exclude: /node_modules/,
+      use: [{
+        loader: "babel-loader",
+        options: {
+          presets: [
+            ['@babel/preset-typescript']
+          ]
+        }
+      }]
+    }],
+  },
   devServer: {
     hot: true,
   },
