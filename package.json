@@ -3,5 +3,17 @@
   "version": "0.0.1",
   "description": "Test work for Fundraise Up",
   "author": "Andrey Nekrasov <bonerdelli@gmail.com>",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "webpack",
+    "start": "webpack serve"
+  },
+  "devDependencies": {
+    "html-webpack-plugin": "^5.6.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.3",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
 }
