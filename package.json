@@ -8,8 +8,7 @@
     "build": "webpack",
     "start": "webpack serve",
     "lint": "eslint ./src/index.ts",
-    "lint:fix": "npm run lint -- --fix",
-    "tsc": "tsc"
+    "lint:fix": "npm run lint -- --fix"
   },
   "engines": {
     "node": "^18.18.0 || >=20.0.0"
