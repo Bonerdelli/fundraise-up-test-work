@@ -1,4 +1,4 @@
-export enum ApplicationState {
+export enum GameResult {
   InProgress,
   CompletedWithError,
   CompletedWithSuccess,
@@ -8,6 +8,14 @@ export enum CharacterState {
   Default,
   Success,
   Error,
+}
+
+export interface GameRoundState {
+  state: GameResult
+  errorsCount: number
+  suggestedCharacters: string[]
+  originalWord: string[]
+  shuffledWord: string[]
 }
 
 export interface ApplicationOptions {
@@ -21,14 +29,20 @@ export interface Application {
 }
 
 export interface Renderer {
-  state: ApplicationState
+  state: GameResult
   renderWord: (word: string | string[]) => Character[]
   renderCharacter: (text: string) => Character
   cleanResultInput: () => void
 }
 
+export type CharacterOnSelect = (
+  character: string,
+  index: number,
+  instance: Character,
+) => void
+
 export interface Character {
   state: CharacterState
-  setOnSelect: (handler: () => void) => void
+  setOnSelect: (handler: CharacterOnSelect) => void
   setState: (state: CharacterState) => void
 }

@@ -1,8 +1,8 @@
-import { Renderer, ApplicationState } from '../../types'
+import { Renderer, GameResult, CharacterState } from '../../types'
 import { CharacterDomRenderer } from './CharacterDomRenderer'
 
 export class ApplicationDomRenderer implements Renderer {
-  public state: ApplicationState
+  public state: GameResult
   private currentQuestionEl: Element
   private totalQuestionsEl: Element
   private answerEl: Element
@@ -18,28 +18,29 @@ export class ApplicationDomRenderer implements Renderer {
       throw new Error('Missed required elements')
     }
 
-    this.state = ApplicationState.InProgress
+    this.state = GameResult.InProgress
     this.currentQuestionEl = currentQuestionEl
     this.totalQuestionsEl = totalQuestionsEl
     this.answerEl = answerEl
     this.lettersEl = lettersEl
   }
 
-  renderWord(word: string | string[]) {
+  public renderWord(word: string | string[]) {
     const charInstances = []
     for (const char of word) {
-      const charInstance = this.renderCharacter(char)
+      let index = 0
+      const charInstance = this.renderCharacter(char, index++)
       this.lettersEl?.appendChild(charInstance.instance)
       charInstances.push(charInstance)
     }
     return charInstances
   }
 
-  renderCharacter(char: string) {
-    return new CharacterDomRenderer(char)
+  public renderCharacter(char: string, index?: number) {
+    return new CharacterDomRenderer(char, CharacterState.Default, index)
   }
 
-  cleanResultInput() {
+  public cleanResultInput() {
     this.answerEl.innerHTML = ''
   }
 }

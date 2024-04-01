@@ -1,14 +1,18 @@
-import { Character, CharacterState } from '../../types'
+import { Character, CharacterOnSelect, CharacterState } from '../../types'
 
 export class CharacterDomRenderer implements Character {
   public state: CharacterState
   private character: string
-  private domElement: Element
+  private index = 0
 
-  constructor(character: string, state?: CharacterState) {
+  private domElement: Element
+  // private listeners: EventListener[] = []
+
+  constructor(character: string, state?: CharacterState, index?: number) {
     this.character = character
     this.state = state ?? CharacterState.Default
-    this.domElement = this.render()
+    this.index = index ?? 0
+    this.domElement = this.createElement()
   }
 
   public get instance() {
@@ -25,8 +29,11 @@ export class CharacterDomRenderer implements Character {
     this.state = state
   }
 
-  public setOnSelect(handler: () => void) {
-    this.domElement?.addEventListener('click', () => handler())
+  public setOnSelect(handler: CharacterOnSelect) {
+    this.domElement?.addEventListener('click', () =>
+      handler(this.character, this.index, this as Character),
+    )
+    // this.listeners.push(listener)
   }
 
   private getStateClassName(state = this.state): string {
@@ -41,7 +48,7 @@ export class CharacterDomRenderer implements Character {
     }
   }
 
-  private render() {
+  private createElement() {
     const div = document.createElement('div')
     div.classList.add('btn', this.getStateClassName(), 'mx-1', 'my-1')
     div.style.width = '2.4em'
