@@ -1,4 +1,4 @@
-import { TRANSITION_BASE_DURATION } from './config'
+import { MAX_ERRORS_COUNT_PER_ROUND, TRANSITION_BASE_DURATION } from './config'
 import {
   Application,
   ApplicationOptions,
@@ -11,7 +11,7 @@ import {
 
 export class VocabularyTrainer implements Application {
   protected words: string[]
-  protected currentWords?: string[]
+  protected currentWords: string[] = []
   private gameState: GameRoundState[] = []
   private renderer: Renderer
 
@@ -57,6 +57,7 @@ export class VocabularyTrainer implements Application {
       suggestedLetters: [],
       errorsCount: 0,
     }))
+    this.currentWords = currentWords
     this.gameState = initialGameSet
   }
 
@@ -76,6 +77,8 @@ export class VocabularyTrainer implements Application {
   }
 
   private renderQuestion() {
+    this.renderer.cleanAnswer()
+    this.renderer.renderCounters(this.currentWords.length, this.currentRoundNum)
     if (this.currentWord) {
       const characterInstances = this.renderer.renderQuestion(this.currentWord)
       for (const instance of characterInstances) {
@@ -92,7 +95,6 @@ export class VocabularyTrainer implements Application {
     const round = this.currentRound as GameRoundState
     if (this.checkIsLetterValid(letter)) {
       round.suggestedLetters.push(letter)
-      round.shuffledWord.splice(index, 1)
       this.renderer.addLetterToAnswer(letter)
       this.renderer.removeLetterFromQuestion(index)
     } else {
@@ -102,6 +104,13 @@ export class VocabularyTrainer implements Application {
         TRANSITION_BASE_DURATION * 3,
       )
       round.errorsCount += 1
+    }
+    if (round.shuffledWord.length === round.suggestedLetters.length) {
+      this.nextWord()
+    }
+    if (round.errorsCount === MAX_ERRORS_COUNT_PER_ROUND) {
+      this.erroredResultsCount++
+      this.nextWord()
     }
   }
 

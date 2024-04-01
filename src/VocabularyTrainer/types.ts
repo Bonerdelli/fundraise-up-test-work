@@ -32,6 +32,8 @@ export interface Renderer {
   state: GameResult
   renderQuestion: (word: string | string[]) => Letter[]
   renderLetter: (text: string) => Letter
+  renderCounters: (total: number, current: number) => void
+  renderResult: (total: number, errors: number) => void
   addLetterToAnswer: (letter: string) => Letter
   removeLetterFromQuestion: (index: number) => void
   cleanAnswer: () => void
