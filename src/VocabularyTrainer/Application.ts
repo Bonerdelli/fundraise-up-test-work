@@ -18,7 +18,6 @@ export class VocabularyTrainer implements Application {
   public wordsInGame: number
   public currentRoundNum: number
   public currentWordLetters: string[] = []
-  public currentWordErrors = 0
   public erroredResultsCount = 0
 
   constructor(opts: ApplicationOptions) {
@@ -26,11 +25,17 @@ export class VocabularyTrainer implements Application {
     this.renderer = opts.renderer
     this.wordsInGame = opts.wordsInGame
     this.currentRoundNum = 0
+    this.initialize()
+  }
+
+  protected initialize() {
+    this.renderer.setOnTextInput((letter: string) =>
+      this.handleLetterSelection(letter),
+    )
   }
 
   public runNewGame() {
     this.generateGameSet(this.wordsInGame)
-    this.currentWordErrors = 0
     this.erroredResultsCount = 0
     this.currentRoundNum = 1
     this.renderQuestion()
@@ -72,8 +77,24 @@ export class VocabularyTrainer implements Application {
   }
 
   protected nextWord() {
-    this.currentRoundNum++
-    this.renderQuestion()
+    if (this.currentRoundNum === this.currentWords.length) {
+      let maxErrorsCount = 0
+      let worstWord: string | undefined = undefined
+      for (const round of this.gameState) {
+        if (round.errorsCount > maxErrorsCount) {
+          maxErrorsCount = round.errorsCount
+          worstWord = round.originalWord.join('')
+        }
+      }
+      this.renderer.renderResult(
+        this.currentWords.length,
+        this.erroredResultsCount,
+        worstWord,
+      )
+    } else {
+      this.currentRoundNum++
+      this.renderQuestion()
+    }
   }
 
   private renderQuestion() {
@@ -89,28 +110,44 @@ export class VocabularyTrainer implements Application {
 
   private handleLetterSelection(
     letter: string,
-    index: number,
-    instance: Letter,
+    index?: number,
+    instance?: Letter,
   ) {
     const round = this.currentRound as GameRoundState
+
+    if (typeof index === 'undefined') {
+      // Get the index of the letter when handling text input
+      index = round.shuffledWord.findIndex(
+        suggestedLetter => suggestedLetter === letter,
+      )
+    }
+
     if (this.checkIsLetterValid(letter)) {
       round.suggestedLetters.push(letter)
       this.renderer.addLetterToAnswer(letter)
-      this.renderer.removeLetterFromQuestion(index)
-    } else {
+      if (typeof index !== 'undefined' && index >= 0) {
+        this.renderer.removeLetterFromQuestion(index)
+      }
+    } else if (instance) {
       instance.setState(LetterState.Error)
       setTimeout(
         () => instance.setState(LetterState.Default),
         TRANSITION_BASE_DURATION * 3,
       )
       round.errorsCount += 1
+    } else {
+      round.errorsCount += 1
     }
+
     if (round.shuffledWord.length === round.suggestedLetters.length) {
       this.nextWord()
     }
+
     if (round.errorsCount === MAX_ERRORS_COUNT_PER_ROUND) {
       this.erroredResultsCount++
-      this.nextWord()
+      this.renderer.cleanQuestion()
+      this.renderer.renderAnswer(round.originalWord, LetterState.Error)
+      setTimeout(() => this.nextWord(), TRANSITION_BASE_DURATION * 10)
     }
   }
 

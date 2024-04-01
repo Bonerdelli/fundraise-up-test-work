@@ -1,4 +1,4 @@
-import { Letter, LetterOnSelect, LetterState } from '../../types'
+import { Letter, OnSelectLetter, LetterState } from '../../types'
 
 export class LetterDomRenderer implements Letter {
   public state: LetterState
@@ -35,7 +35,7 @@ export class LetterDomRenderer implements Letter {
     this.state = state
   }
 
-  public setOnSelect(handler: LetterOnSelect) {
+  public setOnSelect(handler: OnSelectLetter) {
     this.domElement?.addEventListener('click', () =>
       handler(this.character, this.index, this as Letter),
     )
