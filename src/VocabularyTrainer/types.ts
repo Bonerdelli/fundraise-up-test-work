@@ -26,6 +26,7 @@ export interface ApplicationOptions {
 }
 
 export type OnTextInput = (text: string) => void
+export type OnNavigate = (roundNumber: number) => void
 export type OnSelectLetter = (
   character: string,
   index: number,
@@ -40,6 +41,7 @@ export interface Renderer {
   state: GameResult
   answerLetters: Letter[]
   questionLetters: (Letter | null)[]
+
   renderQuestion: (word: string | string[]) => Letter[]
   renderAnswer: (word: string | string[], state?: LetterState) => Letter[]
   renderLetter: (text: string) => Letter
@@ -49,7 +51,10 @@ export interface Renderer {
   removeLetterFromQuestion: (index: number) => void
   cleanQuestion: () => void
   cleanAnswer: () => void
+
   setOnTextInput: (handler: OnTextInput) => void
+  setOnNavigate: (handler: OnNavigate) => void
+  navigateForward: (roundNum: number) => void
 }
 
 export interface Letter {

@@ -12,13 +12,13 @@ import {
 export class VocabularyTrainer implements Application {
   protected words: string[]
   protected currentWords: string[] = []
+  protected wordsInGame: number
+  protected currentRoundNum: number
+  protected currentWordLetters: string[] = []
+  protected erroredResultsCount = 0
+
   private gameState: GameRoundState[] = []
   private renderer: Renderer
-
-  public wordsInGame: number
-  public currentRoundNum: number
-  public currentWordLetters: string[] = []
-  public erroredResultsCount = 0
 
   constructor(opts: ApplicationOptions) {
     this.words = opts.words
@@ -28,26 +28,26 @@ export class VocabularyTrainer implements Application {
     this.initialize()
   }
 
-  protected initialize() {
-    this.renderer.setOnTextInput((letter: string) =>
-      this.handleLetterType(letter),
-    )
+  protected get completed(): boolean {
+    return this.currentRoundNum === this.wordsInGame
   }
 
   protected get currentRound(): GameRoundState | null {
     return this.gameState[this.currentRoundNum - 1] ?? null
   }
 
-  protected get currentWord(): string | null {
-    const word = this.gameState[this.currentRoundNum - 1]?.shuffledWord
-    if (word) {
-      return word.join('')
-    }
-    return null
+  protected initialize() {
+    this.renderer.setOnTextInput((letter: string) =>
+      this.handleLetterType(letter),
+    )
+    this.renderer.setOnNavigate((roundNum: number) =>
+      this.handleNavigate(roundNum),
+    )
   }
 
   public runNewGame() {
     this.generateGameSet(this.wordsInGame)
+    this.renderer.navigateForward(1)
     this.erroredResultsCount = 0
     this.currentRoundNum = 1
     this.renderQuestion()
@@ -78,31 +78,47 @@ export class VocabularyTrainer implements Application {
   }
 
   private nextWord() {
-    if (this.currentRoundNum === this.currentWords.length) {
-      let maxErrorsCount = 0
-      let worstWord: string | undefined = undefined
-      for (const round of this.gameState) {
-        if (round.errorsCount > maxErrorsCount) {
-          maxErrorsCount = round.errorsCount
-          worstWord = round.originalWord.join('')
-        }
-      }
-      this.renderer.renderResult(
-        this.currentWords.length,
-        this.erroredResultsCount,
-        worstWord,
-      )
+    if (this.completed) {
+      this.completeGame()
     } else {
       this.currentRoundNum++
+      this.renderer.navigateForward(this.currentRoundNum)
       this.renderQuestion()
     }
   }
 
+  private completeGame() {
+    let maxErrorsCount = 0
+    let worstWord: string | undefined = undefined
+    for (const round of this.gameState) {
+      if (round.errorsCount > maxErrorsCount) {
+        maxErrorsCount = round.errorsCount
+        worstWord = round.originalWord.join('')
+      }
+    }
+    this.renderer.renderResult(
+      this.wordsInGame,
+      this.erroredResultsCount,
+      worstWord,
+    )
+  }
+
   private renderQuestion() {
     this.renderer.cleanAnswer()
-    this.renderer.renderCounters(this.currentWords.length, this.currentRoundNum)
-    if (this.currentWord) {
-      const characterInstances = this.renderer.renderQuestion(this.currentWord)
+    this.renderer.renderCounters(this.wordsInGame, this.currentRoundNum)
+    let wordRemainder: string[] | undefined = undefined
+    const round = this.currentRound
+    if (round) {
+      wordRemainder = round.shuffledWord
+      if (round.suggestedLetters.length > 1) {
+        wordRemainder = wordRemainder.slice(0, round.suggestedLetters.length)
+      }
+    }
+    if (round?.suggestedLetters?.length) {
+      this.renderer.renderAnswer(round.suggestedLetters, LetterState.Success)
+    }
+    if (wordRemainder) {
+      const characterInstances = this.renderer.renderQuestion(wordRemainder)
       for (const instance of characterInstances) {
         instance.setOnSelect((...args) => this.handleLetterSelection(...args))
       }
@@ -147,6 +163,21 @@ export class VocabularyTrainer implements Application {
     }
 
     this.checkNextRound()
+  }
+
+  private handleNavigate(round: number) {
+    const roundState = this.gameState[round - 1]
+    if (round === this.currentRoundNum) {
+      this.renderQuestion()
+    } else if (roundState) {
+      this.renderer.cleanQuestion()
+      this.renderer.cleanAnswer()
+      this.renderer.renderAnswer(
+        roundState.originalWord,
+        roundState.errorsCount > 0 ? LetterState.Error : LetterState.Success,
+      )
+      this.renderer.renderCounters(this.wordsInGame, round)
+    }
   }
 
   private checkNextRound() {

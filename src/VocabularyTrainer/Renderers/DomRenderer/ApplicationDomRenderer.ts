@@ -5,15 +5,18 @@ import {
   LetterState,
   Letter,
   OnTextInput,
+  OnNavigate,
 } from '../../types'
 import { LetterDomRenderer } from './LetterDomRenderer'
 
 export class ApplicationDomRenderer implements Renderer {
   public state: GameResult
-  protected onTextInput?: OnTextInput
-
   public questionLetters: (Letter | null)[] = []
   public answerLetters: Letter[] = []
+
+  protected onTextInput?: OnTextInput
+  protected onNavigate?: OnNavigate
+  protected prevRound?: number
 
   private container: Element
   private currentQuestionEl: Element
@@ -41,11 +44,17 @@ export class ApplicationDomRenderer implements Renderer {
   }
 
   protected initialize(): void {
-    document.body.addEventListener('keydown', (event: Event) => {
+    document.body.addEventListener('keypress', (event: Event) => {
       const key = (event as KeyboardEvent).key.toLowerCase()
-      console.log('key', key, /^[a-z]$/.test(key))
       if (/^[a-z]$/.test(key)) {
         this.onTextInput?.(key)
+      }
+    })
+
+    window.addEventListener('popstate', (event: Event) => {
+      const roundNum = (event as PopStateEvent).state?.roundNum
+      if (roundNum) {
+        this.onNavigate?.(Number(roundNum))
       }
     })
   }
@@ -54,9 +63,15 @@ export class ApplicationDomRenderer implements Renderer {
     this.onTextInput = handler
   }
 
-  public renderCounters(total: number, current: number) {
-    this.currentQuestionEl.textContent = String(current)
-    this.totalQuestionsEl.textContent = String(total)
+  public setOnNavigate(handler: OnNavigate) {
+    this.onNavigate = handler
+  }
+
+  public navigateForward(roundNum: number) {
+    if (this.prevRound !== roundNum) {
+      history.pushState({ roundNum }, `Round ${roundNum}`)
+      this.prevRound = roundNum
+    }
   }
 
   public renderResult(total: number, errors: number, worstWord?: string) {
@@ -77,7 +92,7 @@ export class ApplicationDomRenderer implements Renderer {
       `Game completed. Your result: ${successCount} of ${total}`,
     ]
     if (errors) {
-      resultRows.push(`Errored results: ${errors}`)
+      resultRows.push(`Number of error words: ${errors}`)
     }
     if (worstWord) {
       resultRows.push(`The word with the most mistakes: ${worstWord}`)
@@ -134,6 +149,11 @@ export class ApplicationDomRenderer implements Renderer {
 
   public renderLetter(letter: string) {
     return new LetterDomRenderer(letter, LetterState.Default)
+  }
+
+  public renderCounters(total: number, current: number) {
+    this.currentQuestionEl.textContent = String(current)
+    this.totalQuestionsEl.textContent = String(total)
   }
 
   public cleanAnswer() {
