@@ -1,8 +1,9 @@
+import { TRANSITION_BASE_DURATION } from './config'
 import {
   Application,
   ApplicationOptions,
-  Character,
-  CharacterState,
+  Letter,
+  LetterState,
   GameResult,
   GameRoundState,
   Renderer,
@@ -31,8 +32,8 @@ export class VocabularyTrainer implements Application {
     this.generateGameSet(this.wordsInGame)
     this.currentWordErrors = 0
     this.erroredResultsCount = 0
-    this.currentRoundNum = 0
-    this.renderWord()
+    this.currentRoundNum = 1
+    this.renderQuestion()
   }
 
   protected get currentRound(): GameRoundState | null {
@@ -40,7 +41,7 @@ export class VocabularyTrainer implements Application {
   }
 
   protected get currentWord(): string | null {
-    const word = this.gameState[this.currentRoundNum]?.shuffledWord
+    const word = this.gameState[this.currentRoundNum - 1]?.shuffledWord
     if (word) {
       return word.join('')
     }
@@ -53,7 +54,7 @@ export class VocabularyTrainer implements Application {
       state: GameResult.InProgress,
       originalWord: word.split(''),
       shuffledWord: this.shuffleArray(word.split('')),
-      suggestedCharacters: [],
+      suggestedLetters: [],
       errorsCount: 0,
     }))
     this.gameState = initialGameSet
@@ -69,47 +70,48 @@ export class VocabularyTrainer implements Application {
     return result
   }
 
-  private renderWord() {
-    const word = this.currentWord
-    if (!word) {
-      // TODO: set completion
-      return
-    }
-    const characterInstances = this.renderer.renderWord(word)
-    for (const instance of characterInstances) {
-      instance.setOnSelect((...args) => this.handleCharacterSelection(...args))
-    }
+  protected nextWord() {
     this.currentRoundNum++
+    this.renderQuestion()
   }
 
-  private nextWord() {
-    this.currentRoundNum++
-    this.renderWord()
+  private renderQuestion() {
+    if (this.currentWord) {
+      const characterInstances = this.renderer.renderQuestion(this.currentWord)
+      for (const instance of characterInstances) {
+        instance.setOnSelect((...args) => this.handleLetterSelection(...args))
+      }
+    }
   }
 
-  private handleCharacterSelection(
-    char: string,
+  private handleLetterSelection(
+    letter: string,
     index: number,
-    instance: Character,
+    instance: Letter,
   ) {
     const round = this.currentRound as GameRoundState
-    if (this.checkIsCharacterValid(char)) {
-      instance.setState(CharacterState.Success)
-      round.suggestedCharacters.push(char)
+    if (this.checkIsLetterValid(letter)) {
+      round.suggestedLetters.push(letter)
+      round.shuffledWord.splice(index, 1)
+      this.renderer.addLetterToAnswer(letter)
+      this.renderer.removeLetterFromQuestion(index)
     } else {
-      instance.setState(CharacterState.Error)
+      instance.setState(LetterState.Error)
+      setTimeout(
+        () => instance.setState(LetterState.Default),
+        TRANSITION_BASE_DURATION * 3,
+      )
       round.errorsCount += 1
     }
   }
 
-  private checkIsCharacterValid(char: string): boolean {
+  private checkIsLetterValid(letter: string): boolean {
     const currentRound = this.currentRound
     if (!currentRound) {
       return false
     }
-    const position = currentRound.suggestedCharacters.length
-    console.log('position', position, currentRound.originalWord, this.gameState, char)
-    if (currentRound.originalWord[position] === char) {
+    const position = currentRound.suggestedLetters.length
+    if (currentRound.originalWord[position] === letter) {
       return true
     }
     return false
