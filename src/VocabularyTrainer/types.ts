@@ -12,10 +12,11 @@ export enum LetterState {
 
 export interface GameRoundState {
   state: GameResult
-  errorsCount: number
-  suggestedLetters: string[]
   originalWord: string[]
   shuffledWord: string[]
+  errorsCount: number
+  suggestedLetters: string[]
+  suggestedLetterIndexes: number[]
 }
 
 export interface ApplicationOptions {
@@ -37,6 +38,8 @@ export interface Application {
 
 export interface Renderer {
   state: GameResult
+  answerLetters: Letter[]
+  questionLetters: (Letter | null)[]
   renderQuestion: (word: string | string[]) => Letter[]
   renderAnswer: (word: string | string[], state?: LetterState) => Letter[]
   renderLetter: (text: string) => Letter
