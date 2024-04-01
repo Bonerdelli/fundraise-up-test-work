@@ -4,13 +4,15 @@ import { LetterDomRenderer } from './LetterDomRenderer'
 
 export class ApplicationDomRenderer implements Renderer {
   public state: GameResult
+
+  private questionCharInstances: (Letter | null)[] = []
+  private answerCharInstances: Letter[] = []
+
+  private container: Element
   private currentQuestionEl: Element
   private totalQuestionsEl: Element
   private answerEl: Element
   private lettersEl: Element
-
-  private questionCharInstances: (Letter | null)[] = []
-  private answerCharInstances: Letter[] = []
 
   constructor() {
     const currentQuestionEl = document.getElementById('current_question')
@@ -23,10 +25,28 @@ export class ApplicationDomRenderer implements Renderer {
     }
 
     this.state = GameResult.InProgress
+    this.container = document.body
     this.currentQuestionEl = currentQuestionEl
     this.totalQuestionsEl = totalQuestionsEl
     this.answerEl = answerEl
     this.lettersEl = lettersEl
+  }
+
+  public renderCounters(total: number, current: number) {
+    this.currentQuestionEl.textContent = String(current)
+    this.totalQuestionsEl.textContent = String(total)
+  }
+
+  public renderResult(total: number, errors: number) {
+    const successCount = total - errors
+    this.answerEl.classList.add('hidden')
+    this.lettersEl.classList.add('hidden')
+    // NOTE: we have no layout there so it's just example
+    // TODO: ask for layout
+    const div = document.createElement('div')
+    div.classList.add('mx-10', 'py-5')
+    div.innerText = `Game completed. Your result: ${total} of ${successCount}`
+    this.container.prepend(div)
   }
 
   public renderQuestion(word: string | string[]) {
