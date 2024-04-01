@@ -12,8 +12,8 @@ export class ApplicationDomRenderer implements Renderer {
   public state: GameResult
   protected onTextInput?: OnTextInput
 
-  private questionCharInstances: (Letter | null)[] = []
-  private answerCharInstances: Letter[] = []
+  public questionLetters: (Letter | null)[] = []
+  public answerLetters: Letter[] = []
 
   private container: Element
   private currentQuestionEl: Element
@@ -42,7 +42,11 @@ export class ApplicationDomRenderer implements Renderer {
 
   protected initialize(): void {
     document.body.addEventListener('keydown', (event: Event) => {
-      this.onTextInput?.((event as KeyboardEvent).key)
+      const key = (event as KeyboardEvent).key.toLowerCase()
+      console.log('key', key, /^[a-z]$/.test(key))
+      if (/^[a-z]$/.test(key)) {
+        this.onTextInput?.(key)
+      }
     })
   }
 
@@ -93,7 +97,7 @@ export class ApplicationDomRenderer implements Renderer {
       letterInstance.setState(state)
       letterInstance.index = index++
     }
-    this.answerCharInstances = letterInstances
+    this.answerLetters = letterInstances
     return letterInstances
   }
 
@@ -107,7 +111,7 @@ export class ApplicationDomRenderer implements Renderer {
       letterInstances.push(letterInstance)
       letterInstance.index = index++
     }
-    this.questionCharInstances = letterInstances
+    this.questionLetters = letterInstances
     return letterInstances
   }
 
@@ -118,14 +122,14 @@ export class ApplicationDomRenderer implements Renderer {
       () => letterInstance.setState(LetterState.Success),
       TRANSITION_BASE_DURATION,
     )
-    this.answerCharInstances.push(letterInstance)
+    this.answerLetters.push(letterInstance)
     return letterInstance
   }
 
   public removeLetterFromQuestion(index: number) {
-    const letterInstance = this.questionCharInstances[index]
+    const letterInstance = this.questionLetters[index]
     this.lettersEl.removeChild(letterInstance?.instance as Node)
-    this.questionCharInstances[index] = null
+    this.questionLetters[index] = null
   }
 
   public renderLetter(letter: string) {

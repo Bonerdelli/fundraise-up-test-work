@@ -30,15 +30,8 @@ export class VocabularyTrainer implements Application {
 
   protected initialize() {
     this.renderer.setOnTextInput((letter: string) =>
-      this.handleLetterSelection(letter),
+      this.handleLetterType(letter),
     )
-  }
-
-  public runNewGame() {
-    this.generateGameSet(this.wordsInGame)
-    this.erroredResultsCount = 0
-    this.currentRoundNum = 1
-    this.renderQuestion()
   }
 
   protected get currentRound(): GameRoundState | null {
@@ -53,6 +46,13 @@ export class VocabularyTrainer implements Application {
     return null
   }
 
+  public runNewGame() {
+    this.generateGameSet(this.wordsInGame)
+    this.erroredResultsCount = 0
+    this.currentRoundNum = 1
+    this.renderQuestion()
+  }
+
   protected generateGameSet(wordsLimit?: number) {
     const currentWords = this.shuffleArray(this.words, wordsLimit)
     const initialGameSet: GameRoundState[] = currentWords.map(word => ({
@@ -60,6 +60,7 @@ export class VocabularyTrainer implements Application {
       originalWord: word.split(''),
       shuffledWord: this.shuffleArray(word.split('')),
       suggestedLetters: [],
+      suggestedLetterIndexes: [],
       errorsCount: 0,
     }))
     this.currentWords = currentWords
@@ -76,7 +77,7 @@ export class VocabularyTrainer implements Application {
     return result
   }
 
-  protected nextWord() {
+  private nextWord() {
     if (this.currentRoundNum === this.currentWords.length) {
       let maxErrorsCount = 0
       let worstWord: string | undefined = undefined
@@ -108,41 +109,51 @@ export class VocabularyTrainer implements Application {
     }
   }
 
+  private handleLetterType(letter: string) {
+    const round = this.currentRound as GameRoundState
+    const index = round.shuffledWord.findIndex(
+      (datum, index) =>
+        datum === letter && !round.suggestedLetterIndexes.includes(index),
+    )
+    let letterInstance: Letter | null = null
+    if (index !== -1) {
+      letterInstance = this.renderer.questionLetters?.[index]
+    }
+    this.handleLetterSelection(letter, index, letterInstance)
+  }
+
   private handleLetterSelection(
     letter: string,
     index?: number,
-    instance?: Letter,
+    instance?: Letter | null,
   ) {
     const round = this.currentRound as GameRoundState
-
-    if (typeof index === 'undefined') {
-      // Get the index of the letter when handling text input
-      index = round.shuffledWord.findIndex(
-        suggestedLetter => suggestedLetter === letter,
-      )
-    }
-
     if (this.checkIsLetterValid(letter)) {
       round.suggestedLetters.push(letter)
       this.renderer.addLetterToAnswer(letter)
       if (typeof index !== 'undefined' && index >= 0) {
         this.renderer.removeLetterFromQuestion(index)
+        round.suggestedLetterIndexes.push(index)
       }
-    } else if (instance) {
-      instance.setState(LetterState.Error)
-      setTimeout(
-        () => instance.setState(LetterState.Default),
-        TRANSITION_BASE_DURATION * 3,
-      )
-      round.errorsCount += 1
     } else {
       round.errorsCount += 1
+      if (instance) {
+        instance.setState(LetterState.Error)
+        setTimeout(
+          () => instance.setState(LetterState.Default),
+          TRANSITION_BASE_DURATION * 3,
+        )
+      }
     }
 
+    this.checkNextRound()
+  }
+
+  private checkNextRound() {
+    const round = this.currentRound as GameRoundState
     if (round.shuffledWord.length === round.suggestedLetters.length) {
       this.nextWord()
     }
-
     if (round.errorsCount === MAX_ERRORS_COUNT_PER_ROUND) {
       this.erroredResultsCount++
       this.renderer.cleanQuestion()
