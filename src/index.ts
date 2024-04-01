@@ -2,10 +2,7 @@ import words from './words.json'
 
 import { VocabularyTrainer } from './VocabularyTrainer/Application'
 import { ApplicationDomRenderer } from './VocabularyTrainer/Renderers/DomRenderer'
-
-// TODO: make config
-export const MAX_ERRORS_COUNT_PER_ROUND = 3
-export const WORDS_IN_GAME = 3
+import { WORDS_IN_GAME } from './VocabularyTrainer/config'
 
 function run() {
   const renderer = new ApplicationDomRenderer()

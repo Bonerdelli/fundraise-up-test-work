@@ -1,17 +1,15 @@
-import { Character, CharacterOnSelect, CharacterState } from '../../types'
+import { Letter, LetterOnSelect, LetterState } from '../../types'
 
-export class CharacterDomRenderer implements Character {
-  public state: CharacterState
+export class LetterDomRenderer implements Letter {
+  public state: LetterState
+  protected indexValue = 0
   private character: string
-  private index = 0
-
   private domElement: Element
   // private listeners: EventListener[] = []
 
-  constructor(character: string, state?: CharacterState, index?: number) {
+  constructor(character: string, state?: LetterState) {
     this.character = character
-    this.state = state ?? CharacterState.Default
-    this.index = index ?? 0
+    this.state = state ?? LetterState.Default
     this.domElement = this.createElement()
   }
 
@@ -19,7 +17,15 @@ export class CharacterDomRenderer implements Character {
     return this.domElement
   }
 
-  public setState(state: CharacterState) {
+  public get index() {
+    return this.indexValue
+  }
+
+  public set index(value: number) {
+    this.indexValue = value
+  }
+
+  public setState(state: LetterState) {
     const prevClassName = this.getStateClassName()
     const className = this.getStateClassName(state)
     if (prevClassName !== className) {
@@ -29,20 +35,20 @@ export class CharacterDomRenderer implements Character {
     this.state = state
   }
 
-  public setOnSelect(handler: CharacterOnSelect) {
+  public setOnSelect(handler: LetterOnSelect) {
     this.domElement?.addEventListener('click', () =>
-      handler(this.character, this.index, this as Character),
+      handler(this.character, this.index, this as Letter),
     )
     // this.listeners.push(listener)
   }
 
   private getStateClassName(state = this.state): string {
     switch (state) {
-      case CharacterState.Error:
+      case LetterState.Error:
         return 'btn-danger'
-      case CharacterState.Success:
+      case LetterState.Success:
         return 'btn-success'
-      case CharacterState.Default:
+      case LetterState.Default:
       default:
         return 'btn-primary'
     }

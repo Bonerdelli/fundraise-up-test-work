@@ -1,5 +1,6 @@
-import { Renderer, GameResult, CharacterState } from '../../types'
-import { CharacterDomRenderer } from './CharacterDomRenderer'
+import { TRANSITION_BASE_DURATION } from '../../config'
+import { Renderer, GameResult, LetterState, Letter } from '../../types'
+import { LetterDomRenderer } from './LetterDomRenderer'
 
 export class ApplicationDomRenderer implements Renderer {
   public state: GameResult
@@ -7,6 +8,9 @@ export class ApplicationDomRenderer implements Renderer {
   private totalQuestionsEl: Element
   private answerEl: Element
   private lettersEl: Element
+
+  private questionCharInstances: (Letter | null)[] = []
+  private answerCharInstances: Letter[] = []
 
   constructor() {
     const currentQuestionEl = document.getElementById('current_question')
@@ -25,22 +29,42 @@ export class ApplicationDomRenderer implements Renderer {
     this.lettersEl = lettersEl
   }
 
-  public renderWord(word: string | string[]) {
-    const charInstances = []
-    for (const char of word) {
-      let index = 0
-      const charInstance = this.renderCharacter(char, index++)
-      this.lettersEl?.appendChild(charInstance.instance)
-      charInstances.push(charInstance)
+  public renderQuestion(word: string | string[]) {
+    this.lettersEl.innerHTML = ''
+    const letterInstances = []
+    let index = 0
+    for (const letter of word) {
+      const letterInstance = this.renderLetter(letter)
+      this.lettersEl.appendChild(letterInstance.instance)
+      letterInstances.push(letterInstance)
+      letterInstance.index = index++
     }
-    return charInstances
+    this.questionCharInstances = letterInstances
+    return letterInstances
   }
 
-  public renderCharacter(char: string, index?: number) {
-    return new CharacterDomRenderer(char, CharacterState.Default, index)
+  public addLetterToAnswer(letter: string) {
+    const letterInstance = this.renderLetter(letter)
+    this.answerEl.appendChild(letterInstance.instance)
+    setTimeout(
+      () => letterInstance.setState(LetterState.Success),
+      TRANSITION_BASE_DURATION,
+    )
+    this.answerCharInstances.push(letterInstance)
+    return letterInstance
   }
 
-  public cleanResultInput() {
+  public removeLetterFromQuestion(index: number) {
+    const letterInstance = this.questionCharInstances[index]
+    this.lettersEl.removeChild(letterInstance?.instance as Node)
+    this.questionCharInstances[index] = null
+  }
+
+  public renderLetter(letter: string) {
+    return new LetterDomRenderer(letter, LetterState.Default)
+  }
+
+  public cleanAnswer() {
     this.answerEl.innerHTML = ''
   }
 }
