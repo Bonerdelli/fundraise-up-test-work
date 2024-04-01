@@ -1,9 +1,16 @@
 import { TRANSITION_BASE_DURATION } from '../../config'
-import { Renderer, GameResult, LetterState, Letter } from '../../types'
+import {
+  Renderer,
+  GameResult,
+  LetterState,
+  Letter,
+  OnTextInput,
+} from '../../types'
 import { LetterDomRenderer } from './LetterDomRenderer'
 
 export class ApplicationDomRenderer implements Renderer {
   public state: GameResult
+  protected onTextInput?: OnTextInput
 
   private questionCharInstances: (Letter | null)[] = []
   private answerCharInstances: Letter[] = []
@@ -24,12 +31,23 @@ export class ApplicationDomRenderer implements Renderer {
       throw new Error('Missed required elements')
     }
 
-    this.state = GameResult.InProgress
-    this.container = document.body
+    this.container = document.getElementById('container') || document.body
     this.currentQuestionEl = currentQuestionEl
     this.totalQuestionsEl = totalQuestionsEl
     this.answerEl = answerEl
     this.lettersEl = lettersEl
+    this.state = GameResult.InProgress
+    this.initialize()
+  }
+
+  protected initialize(): void {
+    document.body.addEventListener('keydown', (event: Event) => {
+      this.onTextInput?.((event as KeyboardEvent).key)
+    })
+  }
+
+  public setOnTextInput(handler: OnTextInput) {
+    this.onTextInput = handler
   }
 
   public renderCounters(total: number, current: number) {
@@ -37,16 +55,46 @@ export class ApplicationDomRenderer implements Renderer {
     this.totalQuestionsEl.textContent = String(total)
   }
 
-  public renderResult(total: number, errors: number) {
+  public renderResult(total: number, errors: number, worstWord?: string) {
+    if (this.state !== GameResult.InProgress) {
+      return // NOTE: do hotnig when game already completed
+    }
     const successCount = total - errors
-    this.answerEl.classList.add('hidden')
-    this.lettersEl.classList.add('hidden')
+    this.answerEl.classList.add('d-none')
+    this.lettersEl.classList.add('d-none')
+    this.state = errors
+      ? GameResult.CompletedWithError
+      : GameResult.CompletedWithSuccess
     // NOTE: we have no layout there so it's just example
     // TODO: ask for layout
     const div = document.createElement('div')
     div.classList.add('mx-10', 'py-5')
-    div.innerText = `Game completed. Your result: ${total} of ${successCount}`
-    this.container.prepend(div)
+    const resultRows = [
+      `Game completed. Your result: ${successCount} of ${total}`,
+    ]
+    if (errors) {
+      resultRows.push(`Errored results: ${errors}`)
+    }
+    if (worstWord) {
+      resultRows.push(`The word with the most mistakes: ${worstWord}`)
+    }
+    div.innerHTML = resultRows.join('<br />')
+    this.container.append(div)
+  }
+
+  public renderAnswer(word: string | string[], state = LetterState.Default) {
+    this.answerEl.innerHTML = ''
+    const letterInstances = []
+    let index = 0
+    for (const letter of word) {
+      const letterInstance = this.renderLetter(letter)
+      this.answerEl.appendChild(letterInstance.instance)
+      letterInstances.push(letterInstance)
+      letterInstance.setState(state)
+      letterInstance.index = index++
+    }
+    this.answerCharInstances = letterInstances
+    return letterInstances
   }
 
   public renderQuestion(word: string | string[]) {
@@ -86,5 +134,9 @@ export class ApplicationDomRenderer implements Renderer {
 
   public cleanAnswer() {
     this.answerEl.innerHTML = ''
+  }
+
+  public cleanQuestion() {
+    this.lettersEl.innerHTML = ''
   }
 }
