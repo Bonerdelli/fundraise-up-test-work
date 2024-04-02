@@ -5,6 +5,8 @@ import {
   Letter,
   OnTextInput,
   OnNavigate,
+  GameState,
+  GameRoundState,
 } from '../../types'
 import { LetterDomRenderer } from './LetterDomRenderer'
 
@@ -49,9 +51,9 @@ export class ApplicationDomRenderer implements Renderer {
     })
 
     window.addEventListener('popstate', (event: Event) => {
-      const roundNum = (event as PopStateEvent).state?.roundNum
-      if (roundNum) {
-        this.onNavigate?.(Number(roundNum))
+      const state = (event as PopStateEvent).state
+      if (state?.gameState) {
+        this.onNavigate?.(state.gameState, state.roundState)
       }
     })
   }
@@ -64,11 +66,14 @@ export class ApplicationDomRenderer implements Renderer {
     this.onNavigate = handler
   }
 
-  public navigateForward(roundNum: number) {
-    if (this.prevRound !== roundNum) {
-      history.pushState({ roundNum }, `Round ${roundNum}`)
-      this.prevRound = roundNum
-    }
+  public navigateForward(
+    gameState: GameState,
+    roundState: GameRoundState | null,
+  ) {
+    history.pushState(
+      { gameState, roundState },
+      `Round ${gameState.currentRoundNum}`,
+    )
   }
 
   public renderResult(total: number, errors: number, worstWord?: string) {
@@ -130,7 +135,11 @@ export class ApplicationDomRenderer implements Renderer {
 
   public removeLetterFromQuestion(index: number) {
     const letterInstance = this.questionLettersMap[index]
-    this.lettersEl.removeChild(letterInstance?.instance as Node)
+    try {
+      this.lettersEl.removeChild(letterInstance?.instance as Node)
+    } catch (error) {
+      // Do nothing
+    }
     delete this.questionLettersMap[index]
   }
 

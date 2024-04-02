@@ -78,8 +78,9 @@ export class VocabularyTrainer implements Application {
     this.renderer.setOnTextInput((letter: string) =>
       this.handleLetterType(letter),
     )
-    this.renderer.setOnNavigate((roundNum: number) =>
-      this.handleNavigate(roundNum),
+    this.renderer.setOnNavigate(
+      (gameState: GameState, roundState: GameRoundState | null) =>
+        this.handleNavigate(gameState, roundState),
     )
     const previousGame = this.gameState
     if (previousGame.progress === GameProgress.InProgress) {
@@ -103,6 +104,7 @@ export class VocabularyTrainer implements Application {
   protected generateGameSet(wordsLimit?: number) {
     const currentWords = this.shuffleArray(this.words, wordsLimit)
     const initialGameSet: GameRoundState[] = currentWords.map(word => ({
+      progress: GameProgress.NotStarted,
       originalWord: word.split(''),
       shuffledWord: this.shuffleArray(word.split('')),
       suggestedLetters: [],
@@ -126,7 +128,7 @@ export class VocabularyTrainer implements Application {
     if (this.gameState.currentRoundNum === this.gameState.totalRounds) {
       this.completeGame()
     } else {
-      this.renderer.navigateForward(this.currentRoundNum)
+      this.renderer.navigateForward(this.gameState, this.currentRound)
       this.currentRoundNum++
       this.renderQuestion()
     }
@@ -152,6 +154,7 @@ export class VocabularyTrainer implements Application {
       this.erroredResultsCount,
       worstWord,
     )
+    this.renderer.navigateForward(this.gameState, this.currentRound)
   }
 
   private renderQuestion() {
@@ -213,6 +216,9 @@ export class VocabularyTrainer implements Application {
         )
       }
     }
+    if (round.progress !== GameProgress.InProgress) {
+      round.progress = GameProgress.InProgress
+    }
     if (this.gameState.progress !== GameProgress.InProgress) {
       this.gameState = {
         ...this.gameState,
@@ -223,31 +229,45 @@ export class VocabularyTrainer implements Application {
     this.checkNextRound()
   }
 
-  private handleNavigate(round: number) {
-    const navigatedRoundState = this.gameRoundsState[round - 1]
-    if (round === this.currentRoundNum) {
-      this.renderQuestion()
-    } else if (navigatedRoundState) {
-      this.renderer.cleanQuestion()
-      this.renderer.cleanAnswer()
-      this.renderer.renderAnswer(
-        navigatedRoundState.originalWord,
-        navigatedRoundState.errorsCount > 0
-          ? LetterState.Error
-          : LetterState.Success,
+  private handleNavigate(
+    gameState: GameState,
+    roundState: GameRoundState | null,
+  ) {
+    if (roundState) {
+      if (
+        roundState.progress === GameProgress.CompletedWithError ||
+        roundState.progress === GameProgress.CompletedWithSuccess
+      ) {
+        this.renderer.cleanQuestion()
+        this.renderer.cleanAnswer()
+        this.renderer.renderAnswer(
+          roundState.originalWord,
+          roundState.errorsCount > 0 ? LetterState.Error : LetterState.Success,
+        )
+      } else {
+        this.renderQuestion()
+      }
+    }
+    if (gameState) {
+      this.renderer.renderCounters(
+        gameState.totalRounds,
+        gameState.currentRoundNum,
       )
-      this.renderer.renderCounters(this.gameRounds, round)
     }
   }
 
   private checkNextRound() {
     const round = this.currentRound as GameRoundState
     if (round.shuffledWord.length === round.suggestedLetters.length) {
+      round.progress = GameProgress.CompletedWithSuccess
+      this.currentRound = round
       this.nextWord()
     }
     if (round.errorsCount === MAX_ERRORS_PER_ROUND) {
       this.erroredResultsCount++
       this.renderer.cleanQuestion()
+      round.progress = GameProgress.CompletedWithError
+      this.currentRound = round
       this.renderer.renderAnswer(round.originalWord, LetterState.Error)
       setTimeout(() => this.nextWord(), TRANSITION_BASE_DURATION * 10)
     }
