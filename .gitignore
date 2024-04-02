@@ -5,3 +5,6 @@ npm-debug.*
 
 # Bundle
 dist/
+
+# Editors
+*.code-workspace

@@ -5,7 +5,6 @@ export class LetterDomRenderer implements Letter {
   private keyValue?: string
   private character: string
   private domElement: Element
-  // private listeners: EventListener[] = []
 
   constructor(character: string, state?: LetterState) {
     this.character = character
@@ -39,7 +38,6 @@ export class LetterDomRenderer implements Letter {
     this.domElement?.addEventListener('click', () =>
       handler(this.character, this.key, this as Letter),
     )
-    // this.listeners.push(listener)
   }
 
   private getStateClassName(state = this.state): string {
