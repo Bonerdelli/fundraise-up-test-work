@@ -14,6 +14,7 @@ import {
 export class VocabularyTrainer implements Application {
   protected words: string[]
   protected gameRounds: number
+  protected startRoundNum?: number
 
   private renderer: Renderer
   private storage: PersistStorage
@@ -84,6 +85,7 @@ export class VocabularyTrainer implements Application {
     )
     const previousGame = this.gameState
     if (previousGame.progress === GameProgress.InProgress) {
+      this.startRoundNum = previousGame.currentRoundNum
       this.renderQuestion()
     } else {
       this.runNewGame()
@@ -98,39 +100,33 @@ export class VocabularyTrainer implements Application {
       erroredResultsCount: 0,
       currentRoundNum: 1,
     }
+    this.startRoundNum = 1
     this.renderQuestion()
   }
 
   protected generateGameSet(wordsLimit?: number) {
     const currentWords = this.shuffleArray(this.words, wordsLimit)
-    const initialGameSet: GameRoundState[] = currentWords.map(word => ({
-      progress: GameProgress.NotStarted,
-      originalWord: word.split(''),
-      shuffledWord: this.shuffleArray(word.split('')),
-      suggestedLetters: [],
-      suggestedLetterIndexes: [],
-      errorsCount: 0,
-    }))
+    const initialGameSet: GameRoundState[] = currentWords.map(
+      (word, index) => ({
+        position: index + 1,
+        progress: GameProgress.NotStarted,
+        originalWord: word.split(''),
+        shuffledWord: this.shuffleArray(word.split('')),
+        suggestedLetters: [],
+        suggestedLetterIndexes: [],
+        errorsCount: 0,
+      }),
+    )
     this.gameRoundsState = initialGameSet
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected shuffleArray(input: any[], limit?: number) {
-    let result = [...input]
-    result.sort(() => Math.random() - 0.5)
-    if (limit && limit < input.length) {
-      result = result.slice(0, limit)
-    }
-    return result
   }
 
   protected nextWord() {
     if (this.gameState.currentRoundNum === this.gameState.totalRounds) {
       this.completeGame()
     } else {
-      this.renderer.navigateForward(this.gameState, this.currentRound)
       this.currentRoundNum++
       this.renderQuestion()
+      this.renderer.navigateForward(this.gameState, this.currentRound)
     }
   }
 
@@ -145,6 +141,7 @@ export class VocabularyTrainer implements Application {
     }
     this.gameState = {
       ...this.gameState,
+      worstWord,
       progress: this.erroredResultsCount
         ? GameProgress.CompletedWithSuccess
         : GameProgress.CompletedWithError,
@@ -154,14 +151,17 @@ export class VocabularyTrainer implements Application {
       this.erroredResultsCount,
       worstWord,
     )
-    this.renderer.navigateForward(this.gameState, this.currentRound)
+    this.renderer.navigateForward(this.gameState, null)
   }
 
-  private renderQuestion() {
+  private renderQuestion(
+    round = this.currentRound,
+    gameRounds = this.gameRounds,
+    currentRoundNum = this.currentRoundNum,
+  ) {
     this.renderer.cleanAnswer()
-    this.renderer.renderCounters(this.gameRounds, this.currentRoundNum)
+    this.renderer.renderCounters(gameRounds, currentRoundNum)
     const questionRemainder: Record<string, string> = {}
-    const round = this.currentRound
     if (round) {
       round.shuffledWord.forEach((value, index) => {
         if (!round.suggestedLetterIndexes?.includes(Number(index))) {
@@ -225,6 +225,7 @@ export class VocabularyTrainer implements Application {
         progress: GameProgress.InProgress,
       }
     }
+    this.renderer.navigateForward(this.gameState, round, true)
     this.currentRound = round
     this.checkNextRound()
   }
@@ -233,6 +234,17 @@ export class VocabularyTrainer implements Application {
     gameState: GameState,
     roundState: GameRoundState | null,
   ) {
+    if (
+      gameState.progress === GameProgress.CompletedWithError ||
+      gameState.progress === GameProgress.CompletedWithSuccess
+    ) {
+      this.renderer.renderResult(
+        gameState.totalRounds,
+        gameState.erroredResultsCount,
+        gameState.worstWord,
+      )
+      return
+    }
     if (roundState) {
       if (
         roundState.progress === GameProgress.CompletedWithError ||
@@ -245,7 +257,11 @@ export class VocabularyTrainer implements Application {
           roundState.errorsCount > 0 ? LetterState.Error : LetterState.Success,
         )
       } else {
-        this.renderQuestion()
+        this.renderQuestion(
+          roundState,
+          gameState.totalRounds,
+          gameState.currentRoundNum,
+        )
       }
     }
     if (gameState) {
@@ -268,9 +284,11 @@ export class VocabularyTrainer implements Application {
       this.renderer.cleanQuestion()
       round.progress = GameProgress.CompletedWithError
       this.currentRound = round
+      this.renderer.navigateForward(this.gameState, round, true)
       this.renderer.renderAnswer(round.originalWord, LetterState.Error)
       setTimeout(() => this.nextWord(), TRANSITION_BASE_DURATION * 10)
     }
+    this.renderer.navigateForward(this.gameState, this.currentRound, true)
   }
 
   private checkIsLetterValid(letter: string): boolean {
@@ -283,5 +301,15 @@ export class VocabularyTrainer implements Application {
       return true
     }
     return false
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected shuffleArray(input: any[], limit?: number) {
+    let result = [...input]
+    result.sort(() => Math.random() - 0.5)
+    if (limit && limit < input.length) {
+      result = result.slice(0, limit)
+    }
+    return result
   }
 }
