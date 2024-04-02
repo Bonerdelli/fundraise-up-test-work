@@ -1,15 +1,21 @@
+import appJson from '../package.json'
 import words from './words.json'
 
 import { VocabularyTrainer } from './VocabularyTrainer/Application'
 import { ApplicationDomRenderer } from './VocabularyTrainer/Renderers/DomRenderer'
-import { WORDS_IN_GAME } from './VocabularyTrainer/config'
+import { LocalStorage } from './VocabularyTrainer/Storages/LocalStorage'
+
+import { GAME_ROUNDS_NUMBER } from './VocabularyTrainer/config'
 
 function run() {
+  const storageKeyPrefix = `${appJson.name}-${appJson.version}-`
+  const storage = new LocalStorage(storageKeyPrefix)
   const renderer = new ApplicationDomRenderer()
   const application = new VocabularyTrainer({
     words,
-    wordsInGame: WORDS_IN_GAME,
+    gameRounds: GAME_ROUNDS_NUMBER,
     renderer,
+    storage,
   })
   application.runNewGame()
 }
