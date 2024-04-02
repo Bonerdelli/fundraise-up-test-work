@@ -16,9 +16,11 @@ export interface GameState {
   totalRounds: number
   erroredResultsCount: number
   currentRoundNum: number
+  worstWord?: string
 }
 
 export interface GameRoundState {
+  position: number
   progress: GameProgress
   originalWord: string[]
   shuffledWord: string[]
@@ -38,6 +40,7 @@ export type OnTextInput = (text: string) => void
 export type OnNavigate = (
   gameState: GameState,
   roundState: GameRoundState | null,
+  replace?: boolean,
 ) => void
 export type OnSelectLetter = (
   character: string,

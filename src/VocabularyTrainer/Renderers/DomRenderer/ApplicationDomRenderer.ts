@@ -17,6 +17,7 @@ export class ApplicationDomRenderer implements Renderer {
   protected onTextInput?: OnTextInput
   protected onNavigate?: OnNavigate
   protected prevRound?: number
+  protected resultRendered = false
 
   private container: Element
   private currentQuestionEl: Element
@@ -69,20 +70,32 @@ export class ApplicationDomRenderer implements Renderer {
   public navigateForward(
     gameState: GameState,
     roundState: GameRoundState | null,
+    replace?: boolean,
   ) {
-    history.pushState(
-      { gameState, roundState },
-      `Round ${gameState.currentRoundNum}`,
-    )
+    if (replace) {
+      history.replaceState(
+        { gameState, roundState },
+        `Round ${gameState.currentRoundNum}`,
+      )
+    } else {
+      history.pushState(
+        { gameState, roundState },
+        `Round ${gameState.currentRoundNum}`,
+      )
+    }
   }
 
   public renderResult(total: number, errors: number, worstWord?: string) {
+    if (this.resultRendered) {
+      return
+    }
     const successCount = total - errors
     this.answerEl.classList.add('d-none')
     this.lettersEl.classList.add('d-none')
     // NOTE: we have no layout there so it's just example
     // TODO: ask for layout
     const div = document.createElement('div')
+    div.setAttribute('id', 'resultContainer')
     div.classList.add('mx-10', 'py-5')
     const resultRows = [
       `Game completed. Your result: ${successCount} of ${total}`,
@@ -94,10 +107,22 @@ export class ApplicationDomRenderer implements Renderer {
       resultRows.push(`The word with the most mistakes: ${worstWord}`)
     }
     div.innerHTML = resultRows.join('<br />')
+    this.resultRendered = true
     this.container.append(div)
   }
 
+  protected preRenderQuestion() {
+    if (this.resultRendered) {
+      const resultEl = document.getElementById('resultContainer')
+      resultEl && this.container.removeChild(resultEl)
+      this.answerEl.classList.remove('d-none')
+      this.lettersEl.classList.remove('d-none')
+      this.resultRendered = false
+    }
+  }
+
   public renderAnswer(word: string | string[], state = LetterState.Default) {
+    this.preRenderQuestion()
     this.answerEl.innerHTML = ''
     const letterInstances = []
     for (const letter of word) {
@@ -111,6 +136,7 @@ export class ApplicationDomRenderer implements Renderer {
   }
 
   public renderQuestion(characterMap: Record<string, string>) {
+    this.preRenderQuestion()
     this.lettersEl.innerHTML = ''
     this.questionLettersMap = {}
     for (const [key, letter] of Object.entries(characterMap)) {
