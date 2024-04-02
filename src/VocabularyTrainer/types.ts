@@ -1,4 +1,5 @@
-export enum GameResult {
+export enum GameProgress {
+  NotStarted,
   InProgress,
   CompletedWithError,
   CompletedWithSuccess,
@@ -11,13 +12,13 @@ export enum LetterState {
 }
 
 export interface GameState {
+  progress: GameProgress
   totalRounds: number
   erroredResultsCount: number
   currentRoundNum: number
 }
 
 export interface GameRoundState {
-  state: GameResult
   originalWord: string[]
   shuffledWord: string[]
   errorsCount: number
@@ -51,7 +52,6 @@ export interface PersistStorage {
 }
 
 export interface Renderer {
-  state: GameResult
   answerLetters: Letter[]
   questionLettersMap: Record<string, Letter>
 

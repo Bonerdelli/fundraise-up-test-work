@@ -1,14 +1,14 @@
-import { MAX_ERRORS_COUNT_PER_ROUND, TRANSITION_BASE_DURATION } from './config'
+import { MAX_ERRORS_PER_ROUND, TRANSITION_BASE_DURATION } from './config'
 import {
   Application,
   ApplicationOptions,
   Letter,
   LetterState,
-  GameResult,
   GameState,
   GameRoundState,
   PersistStorage,
   Renderer,
+  GameProgress,
 } from './types'
 
 export class VocabularyTrainer implements Application {
@@ -82,12 +82,7 @@ export class VocabularyTrainer implements Application {
       this.handleNavigate(roundNum),
     )
     const previousGame = this.gameState
-    if (
-      previousGame &&
-      previousGame.currentRoundNum > 1 &&
-      previousGame.currentRoundNum < previousGame.totalRounds
-    ) {
-      console.log('Old game found', this.currentRound)
+    if (previousGame.progress === GameProgress.InProgress) {
       this.renderQuestion()
     } else {
       this.runNewGame()
@@ -97,6 +92,7 @@ export class VocabularyTrainer implements Application {
   public runNewGame() {
     this.generateGameSet(this.gameRounds)
     this.gameState = {
+      progress: GameProgress.NotStarted,
       totalRounds: this.gameRounds,
       erroredResultsCount: 0,
       currentRoundNum: 1,
@@ -107,7 +103,6 @@ export class VocabularyTrainer implements Application {
   protected generateGameSet(wordsLimit?: number) {
     const currentWords = this.shuffleArray(this.words, wordsLimit)
     const initialGameSet: GameRoundState[] = currentWords.map(word => ({
-      state: GameResult.InProgress,
       originalWord: word.split(''),
       shuffledWord: this.shuffleArray(word.split('')),
       suggestedLetters: [],
@@ -145,6 +140,12 @@ export class VocabularyTrainer implements Application {
         maxErrorsCount = round.errorsCount
         worstWord = round.originalWord.join('')
       }
+    }
+    this.gameState = {
+      ...this.gameState,
+      progress: this.erroredResultsCount
+        ? GameProgress.CompletedWithSuccess
+        : GameProgress.CompletedWithError,
     }
     this.renderer.renderResult(
       this.gameRounds,
@@ -212,6 +213,12 @@ export class VocabularyTrainer implements Application {
         )
       }
     }
+    if (this.gameState.progress !== GameProgress.InProgress) {
+      this.gameState = {
+        ...this.gameState,
+        progress: GameProgress.InProgress,
+      }
+    }
     this.currentRound = round
     this.checkNextRound()
   }
@@ -238,7 +245,7 @@ export class VocabularyTrainer implements Application {
     if (round.shuffledWord.length === round.suggestedLetters.length) {
       this.nextWord()
     }
-    if (round.errorsCount === MAX_ERRORS_COUNT_PER_ROUND) {
+    if (round.errorsCount === MAX_ERRORS_PER_ROUND) {
       this.erroredResultsCount++
       this.renderer.cleanQuestion()
       this.renderer.renderAnswer(round.originalWord, LetterState.Error)
