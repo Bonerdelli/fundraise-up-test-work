@@ -1,7 +1,6 @@
 import { TRANSITION_BASE_DURATION } from '../../config'
 import {
   Renderer,
-  GameResult,
   LetterState,
   Letter,
   OnTextInput,
@@ -10,7 +9,6 @@ import {
 import { LetterDomRenderer } from './LetterDomRenderer'
 
 export class ApplicationDomRenderer implements Renderer {
-  public state: GameResult
   public questionLettersMap: Record<string, Letter> = {}
   public answerLetters: Letter[] = []
 
@@ -39,7 +37,6 @@ export class ApplicationDomRenderer implements Renderer {
     this.totalQuestionsEl = totalQuestionsEl
     this.answerEl = answerEl
     this.lettersEl = lettersEl
-    this.state = GameResult.InProgress
     this.initialize()
   }
 
@@ -75,15 +72,9 @@ export class ApplicationDomRenderer implements Renderer {
   }
 
   public renderResult(total: number, errors: number, worstWord?: string) {
-    if (this.state !== GameResult.InProgress) {
-      return // NOTE: do hotnig when game already completed
-    }
     const successCount = total - errors
     this.answerEl.classList.add('d-none')
     this.lettersEl.classList.add('d-none')
-    this.state = errors
-      ? GameResult.CompletedWithError
-      : GameResult.CompletedWithSuccess
     // NOTE: we have no layout there so it's just example
     // TODO: ask for layout
     const div = document.createElement('div')
