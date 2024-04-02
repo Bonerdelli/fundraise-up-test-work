@@ -1,8 +1,8 @@
 import { Letter, OnSelectLetter, LetterState } from '../../types'
 
 export class LetterDomRenderer implements Letter {
-  public state: LetterState
-  protected indexValue = 0
+  private state: LetterState
+  private keyValue?: string
   private character: string
   private domElement: Element
   // private listeners: EventListener[] = []
@@ -17,12 +17,12 @@ export class LetterDomRenderer implements Letter {
     return this.domElement
   }
 
-  public get index() {
-    return this.indexValue
+  public get key() {
+    return this.keyValue || ''
   }
 
-  public set index(value: number) {
-    this.indexValue = value
+  public set key(value: string) {
+    this.keyValue = value
   }
 
   public setState(state: LetterState) {
@@ -37,7 +37,7 @@ export class LetterDomRenderer implements Letter {
 
   public setOnSelect(handler: OnSelectLetter) {
     this.domElement?.addEventListener('click', () =>
-      handler(this.character, this.index, this as Letter),
+      handler(this.character, this.key, this as Letter),
     )
     // this.listeners.push(listener)
   }

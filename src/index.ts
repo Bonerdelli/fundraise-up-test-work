@@ -17,7 +17,7 @@ function run() {
     renderer,
     storage,
   })
-  application.runNewGame()
+  application.initialize()
 }
 
 run()
