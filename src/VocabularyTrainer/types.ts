@@ -10,6 +10,12 @@ export enum LetterState {
   Error,
 }
 
+export interface GameState {
+  totalRounds: number
+  erroredResultsCount: number
+  currentRoundNum: number
+}
+
 export interface GameRoundState {
   state: GameResult
   originalWord: string[]
@@ -21,8 +27,9 @@ export interface GameRoundState {
 
 export interface ApplicationOptions {
   words: string[]
-  wordsInGame: number
+  gameRounds: number
   renderer: Renderer
+  storage: PersistStorage
 }
 
 export type OnTextInput = (text: string) => void
@@ -35,6 +42,12 @@ export type OnSelectLetter = (
 
 export interface Application {
   runNewGame: () => void
+}
+
+export interface PersistStorage {
+  getItem: <T = unknown>(key: string) => T
+  setItem: <T = unknown>(key: string, value: T) => void
+  removeItem: (key: string) => void
 }
 
 export interface Renderer {

@@ -5,35 +5,67 @@ import {
   Letter,
   LetterState,
   GameResult,
+  GameState,
   GameRoundState,
+  PersistStorage,
   Renderer,
 } from './types'
 
 export class VocabularyTrainer implements Application {
   protected words: string[]
-  protected currentWords: string[] = []
-  protected wordsInGame: number
-  protected currentRoundNum: number
-  protected currentWordLetters: string[] = []
-  protected erroredResultsCount = 0
+  protected gameRounds: number
 
-  private gameState: GameRoundState[] = []
   private renderer: Renderer
+  private storage: PersistStorage
+
+  protected get gameState(): GameState {
+    return this.storage.getItem<GameState>('game') || {}
+  }
+
+  private set gameState(state: GameState) {
+    this.storage.setItem<GameState>('game', state)
+  }
+
+  protected get gameRoundsState(): GameRoundState[] {
+    return this.storage.getItem<GameRoundState[]>('rounds') || []
+  }
+
+  private set gameRoundsState(state: GameRoundState[]) {
+    this.storage.setItem<GameRoundState[]>('rounds', state)
+  }
+
+  protected get currentRoundNum(): number {
+    const state = this.storage.getItem<GameState>('game')
+    return state.currentRoundNum ?? 0
+  }
+
+  private set currentRoundNum(value: number) {
+    const state = this.storage.getItem<GameState>('game')
+    state.currentRoundNum = value
+    this.storage.setItem<GameState>('game', state)
+  }
+
+  protected get erroredResultsCount(): number {
+    const state = this.storage.getItem<GameState>('game')
+    return state.erroredResultsCount ?? 0
+  }
+
+  private set erroredResultsCount(value: number) {
+    const state = this.storage.getItem<GameState>('game')
+    state.erroredResultsCount = value
+    this.storage.setItem<GameState>('game', state)
+  }
+
+  protected get currentRound(): GameRoundState | null {
+    return this.gameRoundsState[this.currentRoundNum - 1] ?? null
+  }
 
   constructor(opts: ApplicationOptions) {
     this.words = opts.words
     this.renderer = opts.renderer
-    this.wordsInGame = opts.wordsInGame
-    this.currentRoundNum = 0
+    this.storage = opts.storage
+    this.gameRounds = opts.gameRounds
     this.initialize()
-  }
-
-  protected get completed(): boolean {
-    return this.currentRoundNum === this.wordsInGame
-  }
-
-  protected get currentRound(): GameRoundState | null {
-    return this.gameState[this.currentRoundNum - 1] ?? null
   }
 
   protected initialize() {
@@ -46,10 +78,12 @@ export class VocabularyTrainer implements Application {
   }
 
   public runNewGame() {
-    this.generateGameSet(this.wordsInGame)
-    this.renderer.navigateForward(1)
-    this.erroredResultsCount = 0
-    this.currentRoundNum = 1
+    this.generateGameSet(this.gameRounds)
+    this.gameState = {
+      totalRounds: this.gameRounds,
+      erroredResultsCount: 0,
+      currentRoundNum: 1,
+    }
     this.renderQuestion()
   }
 
@@ -63,8 +97,7 @@ export class VocabularyTrainer implements Application {
       suggestedLetterIndexes: [],
       errorsCount: 0,
     }))
-    this.currentWords = currentWords
-    this.gameState = initialGameSet
+    this.gameRoundsState = initialGameSet
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,11 +111,11 @@ export class VocabularyTrainer implements Application {
   }
 
   private nextWord() {
-    if (this.completed) {
+    if (this.gameState.currentRoundNum === this.gameState.totalRounds) {
       this.completeGame()
     } else {
-      this.currentRoundNum++
       this.renderer.navigateForward(this.currentRoundNum)
+      this.currentRoundNum++
       this.renderQuestion()
     }
   }
@@ -90,14 +123,14 @@ export class VocabularyTrainer implements Application {
   private completeGame() {
     let maxErrorsCount = 0
     let worstWord: string | undefined = undefined
-    for (const round of this.gameState) {
+    for (const round of this.gameRoundsState) {
       if (round.errorsCount > maxErrorsCount) {
         maxErrorsCount = round.errorsCount
         worstWord = round.originalWord.join('')
       }
     }
     this.renderer.renderResult(
-      this.wordsInGame,
+      this.gameRounds,
       this.erroredResultsCount,
       worstWord,
     )
@@ -105,7 +138,7 @@ export class VocabularyTrainer implements Application {
 
   private renderQuestion() {
     this.renderer.cleanAnswer()
-    this.renderer.renderCounters(this.wordsInGame, this.currentRoundNum)
+    this.renderer.renderCounters(this.gameRounds, this.currentRoundNum)
     let wordRemainder: string[] | undefined = undefined
     const round = this.currentRound
     if (round) {
@@ -166,7 +199,7 @@ export class VocabularyTrainer implements Application {
   }
 
   private handleNavigate(round: number) {
-    const roundState = this.gameState[round - 1]
+    const roundState = this.gameRoundsState[round - 1]
     if (round === this.currentRoundNum) {
       this.renderQuestion()
     } else if (roundState) {
@@ -176,7 +209,7 @@ export class VocabularyTrainer implements Application {
         roundState.originalWord,
         roundState.errorsCount > 0 ? LetterState.Error : LetterState.Success,
       )
-      this.renderer.renderCounters(this.wordsInGame, round)
+      this.renderer.renderCounters(this.gameRounds, round)
     }
   }
 
