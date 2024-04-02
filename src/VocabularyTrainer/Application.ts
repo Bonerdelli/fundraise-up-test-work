@@ -40,9 +40,9 @@ export class VocabularyTrainer implements Application {
   }
 
   private set currentRoundNum(value: number) {
-    const state = this.storage.getItem<GameState>('game')
+    const state = this.gameState
     state.currentRoundNum = value
-    this.storage.setItem<GameState>('game', state)
+    this.gameState = state
   }
 
   protected get erroredResultsCount(): number {
@@ -51,13 +51,20 @@ export class VocabularyTrainer implements Application {
   }
 
   private set erroredResultsCount(value: number) {
-    const state = this.storage.getItem<GameState>('game')
+    const state = this.gameState
     state.erroredResultsCount = value
-    this.storage.setItem<GameState>('game', state)
+    this.gameState = state
   }
 
   protected get currentRound(): GameRoundState | null {
     return this.gameRoundsState[this.currentRoundNum - 1] ?? null
+  }
+
+  private set currentRound(roundState: GameRoundState) {
+    const roundNum = this.currentRoundNum
+    const state = this.gameRoundsState
+    state[roundNum - 1] = roundState
+    this.gameRoundsState = state
   }
 
   constructor(opts: ApplicationOptions) {
@@ -65,16 +72,26 @@ export class VocabularyTrainer implements Application {
     this.renderer = opts.renderer
     this.storage = opts.storage
     this.gameRounds = opts.gameRounds
-    this.initialize()
   }
 
-  protected initialize() {
+  public initialize() {
     this.renderer.setOnTextInput((letter: string) =>
       this.handleLetterType(letter),
     )
     this.renderer.setOnNavigate((roundNum: number) =>
       this.handleNavigate(roundNum),
     )
+    const previousGame = this.gameState
+    if (
+      previousGame &&
+      previousGame.currentRoundNum > 1 &&
+      previousGame.currentRoundNum < previousGame.totalRounds
+    ) {
+      console.log('Old game found', this.currentRound)
+      this.renderQuestion()
+    } else {
+      this.runNewGame()
+    }
   }
 
   public runNewGame() {
@@ -110,7 +127,7 @@ export class VocabularyTrainer implements Application {
     return result
   }
 
-  private nextWord() {
+  protected nextWord() {
     if (this.gameState.currentRoundNum === this.gameState.totalRounds) {
       this.completeGame()
     } else {
@@ -120,7 +137,7 @@ export class VocabularyTrainer implements Application {
     }
   }
 
-  private completeGame() {
+  protected completeGame() {
     let maxErrorsCount = 0
     let worstWord: string | undefined = undefined
     for (const round of this.gameRoundsState) {
@@ -139,19 +156,20 @@ export class VocabularyTrainer implements Application {
   private renderQuestion() {
     this.renderer.cleanAnswer()
     this.renderer.renderCounters(this.gameRounds, this.currentRoundNum)
-    let wordRemainder: string[] | undefined = undefined
+    const questionRemainder: Record<string, string> = {}
     const round = this.currentRound
     if (round) {
-      wordRemainder = round.shuffledWord
-      if (round.suggestedLetters.length > 1) {
-        wordRemainder = wordRemainder.slice(0, round.suggestedLetters.length)
-      }
+      round.shuffledWord.forEach((value, index) => {
+        if (!round.suggestedLetterIndexes?.includes(Number(index))) {
+          questionRemainder[index] = value
+        }
+      })
     }
     if (round?.suggestedLetters?.length) {
       this.renderer.renderAnswer(round.suggestedLetters, LetterState.Success)
     }
-    if (wordRemainder) {
-      const characterInstances = this.renderer.renderQuestion(wordRemainder)
+    if (questionRemainder) {
+      const characterInstances = this.renderer.renderQuestion(questionRemainder)
       for (const instance of characterInstances) {
         instance.setOnSelect((...args) => this.handleLetterSelection(...args))
       }
@@ -166,23 +184,23 @@ export class VocabularyTrainer implements Application {
     )
     let letterInstance: Letter | null = null
     if (index !== -1) {
-      letterInstance = this.renderer.questionLetters?.[index]
+      letterInstance = this.renderer.questionLettersMap?.[String(index)]
     }
     this.handleLetterSelection(letter, index, letterInstance)
   }
 
   private handleLetterSelection(
     letter: string,
-    index?: number,
+    index?: number | string,
     instance?: Letter | null,
   ) {
     const round = this.currentRound as GameRoundState
     if (this.checkIsLetterValid(letter)) {
       round.suggestedLetters.push(letter)
       this.renderer.addLetterToAnswer(letter)
-      if (typeof index !== 'undefined' && index >= 0) {
-        this.renderer.removeLetterFromQuestion(index)
-        round.suggestedLetterIndexes.push(index)
+      if (typeof index !== 'undefined' && Number(index) >= 0) {
+        this.renderer.removeLetterFromQuestion(Number(index))
+        round.suggestedLetterIndexes.push(Number(index))
       }
     } else {
       round.errorsCount += 1
@@ -194,20 +212,22 @@ export class VocabularyTrainer implements Application {
         )
       }
     }
-
+    this.currentRound = round
     this.checkNextRound()
   }
 
   private handleNavigate(round: number) {
-    const roundState = this.gameRoundsState[round - 1]
+    const navigatedRoundState = this.gameRoundsState[round - 1]
     if (round === this.currentRoundNum) {
       this.renderQuestion()
-    } else if (roundState) {
+    } else if (navigatedRoundState) {
       this.renderer.cleanQuestion()
       this.renderer.cleanAnswer()
       this.renderer.renderAnswer(
-        roundState.originalWord,
-        roundState.errorsCount > 0 ? LetterState.Error : LetterState.Success,
+        navigatedRoundState.originalWord,
+        navigatedRoundState.errorsCount > 0
+          ? LetterState.Error
+          : LetterState.Success,
       )
       this.renderer.renderCounters(this.gameRounds, round)
     }

@@ -36,7 +36,7 @@ export type OnTextInput = (text: string) => void
 export type OnNavigate = (roundNumber: number) => void
 export type OnSelectLetter = (
   character: string,
-  index: number,
+  key: string,
   instance: Letter,
 ) => void
 
@@ -53,9 +53,9 @@ export interface PersistStorage {
 export interface Renderer {
   state: GameResult
   answerLetters: Letter[]
-  questionLetters: (Letter | null)[]
+  questionLettersMap: Record<string, Letter>
 
-  renderQuestion: (word: string | string[]) => Letter[]
+  renderQuestion: (characterMap: Record<string, string>) => Letter[]
   renderAnswer: (word: string | string[], state?: LetterState) => Letter[]
   renderLetter: (text: string) => Letter
   renderCounters: (total: number, current: number) => void
@@ -71,9 +71,8 @@ export interface Renderer {
 }
 
 export interface Letter {
-  state: LetterState
-  index: number
   instance: unknown
+  key?: string
   setOnSelect: (handler: OnSelectLetter) => void
   setState: (state: LetterState) => void
 }

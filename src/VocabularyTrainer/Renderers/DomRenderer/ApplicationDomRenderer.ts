@@ -11,7 +11,7 @@ import { LetterDomRenderer } from './LetterDomRenderer'
 
 export class ApplicationDomRenderer implements Renderer {
   public state: GameResult
-  public questionLetters: (Letter | null)[] = []
+  public questionLettersMap: Record<string, Letter> = {}
   public answerLetters: Letter[] = []
 
   protected onTextInput?: OnTextInput
@@ -104,30 +104,26 @@ export class ApplicationDomRenderer implements Renderer {
   public renderAnswer(word: string | string[], state = LetterState.Default) {
     this.answerEl.innerHTML = ''
     const letterInstances = []
-    let index = 0
     for (const letter of word) {
       const letterInstance = this.renderLetter(letter)
       this.answerEl.appendChild(letterInstance.instance)
       letterInstances.push(letterInstance)
       letterInstance.setState(state)
-      letterInstance.index = index++
     }
     this.answerLetters = letterInstances
     return letterInstances
   }
 
-  public renderQuestion(word: string | string[]) {
+  public renderQuestion(characterMap: Record<string, string>) {
     this.lettersEl.innerHTML = ''
-    const letterInstances = []
-    let index = 0
-    for (const letter of word) {
+    this.questionLettersMap = {}
+    for (const [key, letter] of Object.entries(characterMap)) {
       const letterInstance = this.renderLetter(letter)
       this.lettersEl.appendChild(letterInstance.instance)
-      letterInstances.push(letterInstance)
-      letterInstance.index = index++
+      this.questionLettersMap[key] = letterInstance
+      letterInstance.key = key
     }
-    this.questionLetters = letterInstances
-    return letterInstances
+    return Object.values(this.questionLettersMap)
   }
 
   public addLetterToAnswer(letter: string) {
@@ -142,9 +138,9 @@ export class ApplicationDomRenderer implements Renderer {
   }
 
   public removeLetterFromQuestion(index: number) {
-    const letterInstance = this.questionLetters[index]
+    const letterInstance = this.questionLettersMap[index]
     this.lettersEl.removeChild(letterInstance?.instance as Node)
-    this.questionLetters[index] = null
+    delete this.questionLettersMap[index]
   }
 
   public renderLetter(letter: string) {
