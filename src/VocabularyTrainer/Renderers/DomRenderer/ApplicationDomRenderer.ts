@@ -28,12 +28,14 @@ export class ApplicationDomRenderer implements Renderer {
   private answerEl: Element
   private lettersEl: Element
   private resultContainerEl?: Element
+  private statusRowEl?: Element | null
 
   constructor() {
     const currentQuestionEl = document.getElementById('current_question')
     const totalQuestionsEl = document.getElementById('total_questions')
     const answerEl = document.getElementById('answer')
     const lettersEl = document.getElementById('letters')
+    const statusRowEl = document.getElementById('status_row')
 
     if (!currentQuestionEl || !totalQuestionsEl || !answerEl || !lettersEl) {
       throw new Error('Missed required elements')
@@ -44,6 +46,7 @@ export class ApplicationDomRenderer implements Renderer {
     this.totalQuestionsEl = totalQuestionsEl
     this.answerEl = answerEl
     this.lettersEl = lettersEl
+    this.statusRowEl = statusRowEl
     this.initialize()
   }
 
@@ -233,6 +236,7 @@ export class ApplicationDomRenderer implements Renderer {
   protected preRenderResult(): Element {
     this.answerEl.classList.add('d-none')
     this.lettersEl.classList.add('d-none')
+    this.statusRowEl?.classList.add('d-none')
     if (!this.resultRendered) {
       const div = document.createElement('div')
       div.setAttribute('id', 'resultContainer')
@@ -245,11 +249,12 @@ export class ApplicationDomRenderer implements Renderer {
   }
 
   protected preRenderQuestion() {
+    this.answerEl.classList.remove('d-none')
+    this.lettersEl.classList.remove('d-none')
+    this.statusRowEl?.classList.remove('d-none')
     if (this.resultRendered) {
       const resultEl = document.getElementById('resultContainer')
       resultEl && this.container.removeChild(resultEl)
-      this.answerEl.classList.remove('d-none')
-      this.lettersEl.classList.remove('d-none')
       this.resultRendered = false
     }
   }
