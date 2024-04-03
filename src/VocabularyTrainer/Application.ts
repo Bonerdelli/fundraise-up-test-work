@@ -146,6 +146,7 @@ export class VocabularyTrainer implements Application {
         ? GameProgress.CompletedWithSuccess
         : GameProgress.CompletedWithError,
     }
+    this.renderer.setOnNewGame(() => this.runNewGame())
     this.renderer.renderResult(
       this.gameRounds,
       this.erroredResultsCount,
@@ -160,6 +161,7 @@ export class VocabularyTrainer implements Application {
     currentRoundNum = this.currentRoundNum,
   ) {
     this.renderer.cleanAnswer()
+    this.renderer.cleanQuestion()
     this.renderer.renderCounters(gameRounds, currentRoundNum)
     const questionRemainder: Record<string, string> = {}
     if (round) {

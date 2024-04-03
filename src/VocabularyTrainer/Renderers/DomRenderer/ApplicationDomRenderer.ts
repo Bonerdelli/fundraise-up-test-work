@@ -16,6 +16,9 @@ export class ApplicationDomRenderer implements Renderer {
 
   protected onTextInput?: OnTextInput
   protected onNavigate?: OnNavigate
+  protected onNewGame?: () => void
+  protected onResumeGame?: () => void
+
   protected prevRound?: number
   protected resultRendered = false
 
@@ -67,6 +70,14 @@ export class ApplicationDomRenderer implements Renderer {
     this.onNavigate = handler
   }
 
+  public setOnNewGame(handler: () => void) {
+    this.onNewGame = handler
+  }
+
+  public setOnResumeGame(handler: () => void) {
+    this.onResumeGame = handler
+  }
+
   public navigateForward(
     gameState: GameState,
     roundState: GameRoundState | null,
@@ -97,6 +108,7 @@ export class ApplicationDomRenderer implements Renderer {
     const div = document.createElement('div')
     div.setAttribute('id', 'resultContainer')
     div.classList.add('mx-10', 'py-5')
+
     const resultRows = [
       `Game completed. Your result: ${successCount} of ${total}`,
     ]
@@ -107,8 +119,20 @@ export class ApplicationDomRenderer implements Renderer {
       resultRows.push(`The word with the most mistakes: ${worstWord}`)
     }
     div.innerHTML = resultRows.join('<br />')
-    this.resultRendered = true
     this.container.append(div)
+
+    if (this.onNewGame) {
+      const newGameButtonEl = document.createElement('button')
+      newGameButtonEl.classList.add('btn', 'btn-primary')
+      newGameButtonEl.innerText = 'Start new game'
+      newGameButtonEl.addEventListener('click', this.onNewGame)
+      const buttonDiv = document.createElement('div')
+      buttonDiv.classList.add('pt-5')
+      buttonDiv.append(newGameButtonEl)
+      div.append(buttonDiv)
+    }
+
+    this.resultRendered = true
   }
 
   protected preRenderQuestion() {

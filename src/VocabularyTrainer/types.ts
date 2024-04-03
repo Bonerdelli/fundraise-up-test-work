@@ -5,12 +5,6 @@ export enum GameProgress {
   CompletedWithSuccess,
 }
 
-export enum LetterState {
-  Default,
-  Success,
-  Error,
-}
-
 export interface GameState {
   progress: GameProgress
   totalRounds: number
@@ -35,18 +29,6 @@ export interface ApplicationOptions {
   renderer: Renderer
   storage: PersistStorage
 }
-
-export type OnTextInput = (text: string) => void
-export type OnNavigate = (
-  gameState: GameState,
-  roundState: GameRoundState | null,
-  replace?: boolean,
-) => void
-export type OnSelectLetter = (
-  character: string,
-  key: string,
-  instance: Letter,
-) => void
 
 export interface Application {
   runNewGame: () => void
@@ -74,7 +56,30 @@ export interface Renderer {
 
   setOnTextInput: (handler: OnTextInput) => void
   setOnNavigate: (handler: OnNavigate) => void
+  setOnNewGame: (handler: () => void) => void
+  setOnResumeGame: (handler: () => void) => void
+
   navigateForward: OnNavigate
+}
+
+export type OnTextInput = (text: string) => void
+
+export type OnNavigate = (
+  gameState: GameState,
+  roundState: GameRoundState | null,
+  replace?: boolean,
+) => void
+
+export type OnSelectLetter = (
+  character: string,
+  key: string,
+  instance: Letter,
+) => void
+
+export enum LetterState {
+  Default,
+  Success,
+  Error,
 }
 
 export interface Letter {
