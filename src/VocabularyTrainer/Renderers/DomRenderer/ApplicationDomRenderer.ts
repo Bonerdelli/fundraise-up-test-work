@@ -51,6 +51,7 @@ export class ApplicationDomRenderer implements Renderer {
   }
 
   protected initialize(): void {
+    this.statusRowEl?.classList.add('d-none')
     document.body.addEventListener('keypress', (event: Event) => {
       const key = (event as KeyboardEvent).key.toLowerCase()
       if (/^[a-z]$/.test(key)) {
@@ -155,6 +156,7 @@ export class ApplicationDomRenderer implements Renderer {
   public renderCounters(total: number, current: number) {
     this.currentQuestionEl.textContent = String(current)
     this.totalQuestionsEl.textContent = String(total)
+    this.statusRowEl?.classList.remove('d-none')
   }
 
   public cleanAnswer() {
