@@ -85,8 +85,10 @@ export class VocabularyTrainer implements Application {
     )
     const previousGame = this.gameState
     if (previousGame.progress === GameProgress.InProgress) {
+      this.renderer.setOnResumeGame(() => this.renderQuestion())
+      this.renderer.setOnNewGame(() => this.runNewGame())
+      this.renderer.renderResumeGameNotification()
       this.startRoundNum = previousGame.currentRoundNum
-      this.renderQuestion()
     } else {
       this.runNewGame()
     }

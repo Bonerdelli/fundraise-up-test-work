@@ -48,9 +48,11 @@ export interface Renderer {
   renderAnswer: (word: string | string[], state?: LetterState) => Letter[]
   renderLetter: (text: string) => Letter
   renderCounters: (total: number, current: number) => void
-  renderResult: (total: number, errors: number, worstWord?: string) => void
   addLetterToAnswer: (letter: string) => Letter
   removeLetterFromQuestion: (index: number) => void
+
+  renderResumeGameNotification: () => void
+  renderResult: (total: number, errors: number, worstWord?: string) => void
   cleanQuestion: () => void
   cleanAnswer: () => void
 

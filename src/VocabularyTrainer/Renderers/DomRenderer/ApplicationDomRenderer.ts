@@ -27,6 +27,7 @@ export class ApplicationDomRenderer implements Renderer {
   private totalQuestionsEl: Element
   private answerEl: Element
   private lettersEl: Element
+  private resultContainerEl?: Element
 
   constructor() {
     const currentQuestionEl = document.getElementById('current_question')
@@ -96,55 +97,6 @@ export class ApplicationDomRenderer implements Renderer {
     }
   }
 
-  public renderResult(total: number, errors: number, worstWord?: string) {
-    if (this.resultRendered) {
-      return
-    }
-    const successCount = total - errors
-    this.answerEl.classList.add('d-none')
-    this.lettersEl.classList.add('d-none')
-    // NOTE: we have no layout there so it's just example
-    // TODO: ask for layout
-    const div = document.createElement('div')
-    div.setAttribute('id', 'resultContainer')
-    div.classList.add('mx-10', 'py-5')
-
-    const resultRows = [
-      `Game completed. Your result: ${successCount} of ${total}`,
-    ]
-    if (errors) {
-      resultRows.push(`Number of error words: ${errors}`)
-    }
-    if (worstWord) {
-      resultRows.push(`The word with the most mistakes: ${worstWord}`)
-    }
-    div.innerHTML = resultRows.join('<br />')
-    this.container.append(div)
-
-    if (this.onNewGame) {
-      const newGameButtonEl = document.createElement('button')
-      newGameButtonEl.classList.add('btn', 'btn-primary')
-      newGameButtonEl.innerText = 'Start new game'
-      newGameButtonEl.addEventListener('click', this.onNewGame)
-      const buttonDiv = document.createElement('div')
-      buttonDiv.classList.add('pt-5')
-      buttonDiv.append(newGameButtonEl)
-      div.append(buttonDiv)
-    }
-
-    this.resultRendered = true
-  }
-
-  protected preRenderQuestion() {
-    if (this.resultRendered) {
-      const resultEl = document.getElementById('resultContainer')
-      resultEl && this.container.removeChild(resultEl)
-      this.answerEl.classList.remove('d-none')
-      this.lettersEl.classList.remove('d-none')
-      this.resultRendered = false
-    }
-  }
-
   public renderAnswer(word: string | string[], state = LetterState.Default) {
     this.preRenderQuestion()
     this.answerEl.innerHTML = ''
@@ -208,5 +160,97 @@ export class ApplicationDomRenderer implements Renderer {
 
   public cleanQuestion() {
     this.lettersEl.innerHTML = ''
+  }
+
+  public renderResult(total: number, errors: number, worstWord?: string) {
+    if (this.resultRendered) {
+      return
+    }
+    const successCount = total - errors
+    const resultContainerEl = this.preRenderResult()
+
+    // NOTE: we have no layout there so it's just example
+    // TODO: ask for layout
+    const resultRows = [
+      `Game completed. Your result: ${successCount} of ${total}`,
+    ]
+    if (errors) {
+      resultRows.push(`Number of error words: ${errors}`)
+    }
+    if (worstWord) {
+      resultRows.push(`The word with the most mistakes: ${worstWord}`)
+    }
+    resultContainerEl.innerHTML = resultRows.join('<br />')
+
+    if (this.onNewGame) {
+      const buttonEl = this.renderNewGameButton()
+      const buttonDiv = document.createElement('div')
+      buttonDiv.classList.add('pt-5')
+      buttonDiv.append(buttonEl)
+      resultContainerEl.append(buttonDiv)
+    }
+
+    this.resultRendered = true
+  }
+
+  public renderResumeGameNotification() {
+    if (!this.onResumeGame) {
+      return
+    }
+
+    const resultContainerEl = this.preRenderResult()
+    const message = 'Do you want to resume previous game?'
+    resultContainerEl.textContent = message
+
+    const buttonDiv = document.createElement('div')
+    buttonDiv.classList.add('pt-5')
+
+    const resumeGameButtonEl = document.createElement('button')
+    resumeGameButtonEl.classList.add('btn', 'btn-primary', 'mr-1')
+    resumeGameButtonEl.innerText = 'Resume previous game'
+    resumeGameButtonEl.addEventListener('click', this.onResumeGame)
+
+    buttonDiv.classList.add('pt-5')
+    buttonDiv.append(resumeGameButtonEl)
+
+    if (this.onNewGame) {
+      const buttonEl = this.renderNewGameButton()
+      buttonDiv.append(buttonEl)
+    }
+
+    resultContainerEl.append(buttonDiv)
+    this.resultRendered = true
+  }
+
+  protected renderNewGameButton(): Element {
+    const newGameButtonEl = document.createElement('button')
+    newGameButtonEl.classList.add('btn', 'btn-primary')
+    newGameButtonEl.innerText = 'Start new game'
+    this.onNewGame && newGameButtonEl.addEventListener('click', this.onNewGame)
+    return newGameButtonEl
+  }
+
+  protected preRenderResult(): Element {
+    this.answerEl.classList.add('d-none')
+    this.lettersEl.classList.add('d-none')
+    if (!this.resultRendered) {
+      const div = document.createElement('div')
+      div.setAttribute('id', 'resultContainer')
+      div.classList.add('mx-10', 'py-5')
+      this.resultContainerEl = div
+      this.container.append(div)
+      return div
+    }
+    return this.resultContainerEl as Element
+  }
+
+  protected preRenderQuestion() {
+    if (this.resultRendered) {
+      const resultEl = document.getElementById('resultContainer')
+      resultEl && this.container.removeChild(resultEl)
+      this.answerEl.classList.remove('d-none')
+      this.lettersEl.classList.remove('d-none')
+      this.resultRendered = false
+    }
   }
 }
