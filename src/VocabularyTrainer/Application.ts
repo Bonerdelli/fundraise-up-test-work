@@ -18,6 +18,7 @@ export class VocabularyTrainer implements Application {
 
   private renderer: Renderer
   private storage: PersistStorage
+  private animationTimeout?: NodeJS.Timeout
 
   protected get gameState(): GameState {
     return this.storage.getItem<GameState>('game') || {}
@@ -203,6 +204,9 @@ export class VocabularyTrainer implements Application {
     instance?: Letter | null,
   ) {
     const round = this.currentRound as GameRoundState
+    if (this.animationTimeout) {
+      return // Do nothing when animation or trasition in progress
+    }
     if (this.checkIsLetterValid(letter)) {
       round.suggestedLetters.push(letter)
       this.renderer.addLetterToAnswer(letter)
@@ -214,10 +218,10 @@ export class VocabularyTrainer implements Application {
       round.errorsCount += 1
       if (instance) {
         instance.setState(LetterState.Error)
-        setTimeout(
-          () => instance.setState(LetterState.Default),
-          TRANSITION_BASE_DURATION * 3,
-        )
+        this.animationTimeout = setTimeout(() => {
+          instance.setState(LetterState.Default)
+          delete this.animationTimeout
+        }, TRANSITION_BASE_DURATION * 3)
       }
     }
     if (round.progress !== GameProgress.InProgress) {
@@ -290,7 +294,10 @@ export class VocabularyTrainer implements Application {
       this.currentRound = round
       this.renderer.navigateForward(this.gameState, round, true)
       this.renderer.renderAnswer(round.originalWord, LetterState.Error)
-      setTimeout(() => this.nextWord(), TRANSITION_BASE_DURATION * 10)
+      this.animationTimeout = setTimeout(() => {
+        this.nextWord()
+        delete this.animationTimeout
+      }, TRANSITION_BASE_DURATION * 10)
     }
     this.renderer.navigateForward(this.gameState, this.currentRound, true)
   }
